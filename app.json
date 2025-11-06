@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "times-up",
+    "name": "Time's Up!",
     "slug": "times-up",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,23 +8,32 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mad.timesup",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect with nearby players for local multiplayer games.",
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to host games for other players to join."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+      "package": "com.mad.timesup",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_ADVERTISE",
+        "ACCESS_FINE_LOCATION"
+      ]
     }
   }
 }
