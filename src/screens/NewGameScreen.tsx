@@ -42,14 +42,14 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <View style={styles.labelContainer}>
-                <Text style={styles.label}>Room name</Text>
+                <Text style={styles.label}>Room code</Text>
               </View>
               <TextInput
                 style={styles.input}
                 value={roomName}
-                onChangeText={setRoomName}
-                maxLength={20}
-                placeholder="Enter room name"
+                maxLength={4}
+                editable={false}
+                placeholder="Room code"
                 placeholderTextColor="#999"
               />
             </View>
