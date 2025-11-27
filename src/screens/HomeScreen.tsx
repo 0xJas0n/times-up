@@ -71,13 +71,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingVertical: 60,
   },
   title: {
     fontSize: 56,
     fontWeight: 'bold',
     color: '#D35400',
-    marginBottom: 60,
+    marginBottom: 20,
     textAlign: 'center',
     letterSpacing: 1,
     fontFamily: 'TheBringa',
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 400,
     gap: 16,
   },
   button: {
