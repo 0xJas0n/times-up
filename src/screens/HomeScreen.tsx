@@ -33,7 +33,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                pressed && styles.buttonPressed,
+                styles.newGameButton,
+                pressed && styles.newGameButtonPressed,
               ]}
               onPress={handleNewGame}
             >
@@ -43,7 +44,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                pressed && styles.buttonPressed,
+                styles.joinGameButton,
+                pressed && styles.joinGameButtonPressed,
               ]}
               onPress={handleJoinGame}
             >
@@ -89,7 +91,6 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   button: {
-    backgroundColor: '#D35400',
     paddingVertical: 18,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -102,12 +103,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
   },
-  buttonPressed: {
-    backgroundColor: '#B84600',
+  newGameButton: {
+    backgroundColor: '#2DD881',
+  },
+  newGameButtonPressed: {
+    backgroundColor: '#25B86D',
+    opacity: 0.8,
+  },
+  joinGameButton: {
+    backgroundColor: '#3B82F6',
+  },
+  joinGameButtonPressed: {
+    backgroundColor: '#2563EB',
     opacity: 0.8,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 0.5,
