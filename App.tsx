@@ -13,14 +13,6 @@ type RootStackParamList = {
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    'TheBringa': require('./src/assets/fonts/the-bringa.ttf'),
-  });
-
-  if (!fontsLoaded) {
-    return null;
-  }
-
   return (
     <NavigationContainer>
       <Stack.Navigator
