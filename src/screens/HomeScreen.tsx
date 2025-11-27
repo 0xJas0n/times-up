@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 type RootStackParamList = {
   Home: undefined;
   NewGame: undefined;
+  JoinGame: undefined;
 };
 
 type HomeScreenProps = {
@@ -18,8 +19,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const handleJoinGame = () => {
-    console.log('Join Game pressed');
-    // TODO: Navigate to join game screen
+    navigation.navigate('JoinGame');
   };
 
   return (

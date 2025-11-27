@@ -3,10 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './src/screens/HomeScreen';
 import NewGameScreen from './src/screens/NewGameScreen';
+import JoinGameScreen from './src/screens/JoinGameScreen';
 
 type RootStackParamList = {
   Home: undefined;
   NewGame: undefined;
+  JoinGame: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,6 +24,7 @@ export default function App() {
       >
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="NewGame" component={NewGameScreen} />
+        <Stack.Screen name="JoinGame" component={JoinGameScreen} />
       </Stack.Navigator>
       <StatusBar style="light" />
     </NavigationContainer>
