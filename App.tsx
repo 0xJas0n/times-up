@@ -1,9 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFonts } from 'expo-font';
 import { PatternBackground } from './src/components/PatternBackground';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    'TheBringa': require('./src/assets/fonts/the-bringa.ttf'),
+  });
+
   const handleNewGame = () => {
     console.log('New Game pressed');
     // TODO: Navigate to new game screen
@@ -13,6 +18,10 @@ export default function App() {
     console.log('Join Game pressed');
     // TODO: Navigate to join game screen
   };
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
@@ -28,8 +37,6 @@ export default function App() {
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleNewGame}
-              accessibilityLabel="Start a new game"
-              accessibilityRole="button"
             >
               <Text style={styles.buttonText}>New Game</Text>
             </Pressable>
@@ -40,8 +47,6 @@ export default function App() {
                 pressed && styles.buttonPressed,
               ]}
               onPress={handleJoinGame}
-              accessibilityLabel="Join an existing game"
-              accessibilityRole="button"
             >
               <Text style={styles.buttonText}>Join Game</Text>
             </Pressable>
@@ -64,16 +69,21 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
+    paddingVertical: 80,
   },
   title: {
     fontSize: 56,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: '#D35400',
     marginBottom: 60,
     textAlign: 'center',
     letterSpacing: 1,
+    fontFamily: 'TheBringa',
+    textShadowColor: '#2B2B2B',
+    textShadowOffset: { width: -2, height: -2 },
+    textShadowRadius: 0,
   },
   buttonContainer: {
     width: '100%',
