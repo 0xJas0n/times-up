@@ -42,8 +42,7 @@ export const PatternBackground: React.FC<PatternBackgroundProps> = ({
     ).start();
   }, [speed, effectiveTileSize]);
 
-  // Calculate how many tiles we need to cover the screen (with extra for animation)
-  const rows = Math.ceil(1000 / effectiveTileSize) + 2; // Extra tiles for seamless loop
+  const rows = Math.ceil(1000 / effectiveTileSize) + 2;
   const cols = Math.ceil(600 / effectiveTileSize) + 2;
 
   const tiles = [];
