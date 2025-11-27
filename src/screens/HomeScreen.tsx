@@ -27,7 +27,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       <PatternBackground speed={10} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
-          <Text style={styles.title}>Time's Up</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Time's Up</Text>
+          </View>
 
           <View style={styles.buttonContainer}>
             <Pressable
@@ -73,17 +75,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 60,
   },
+  titleContainer: {
+    backgroundColor: '#D35400',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
   title: {
     fontSize: 56,
     fontWeight: 'bold',
-    color: '#D35400',
-    marginBottom: 20,
+    color: '#000000',
     textAlign: 'center',
     letterSpacing: 1,
-    fontFamily: 'TheBringa',
-    textShadowColor: '#2B2B2B',
-    textShadowOffset: { width: -2, height: -2 },
-    textShadowRadius: 0,
   },
   buttonContainer: {
     width: '100%',

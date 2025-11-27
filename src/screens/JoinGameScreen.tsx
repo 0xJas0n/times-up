@@ -38,7 +38,9 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
       <PatternBackground speed={10} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
-          <Text style={styles.title}>Join Game</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Join Game</Text>
+          </View>
 
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
@@ -115,16 +117,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 60,
   },
+  titleContainer: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
   title: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#2DD881',
+    color: '#000000',
     textAlign: 'center',
     letterSpacing: 1,
-    textShadowColor: '#1A4D2E',
-    textShadowOffset: { width: -2, height: -2 },
-    textShadowRadius: 0,
-    marginBottom: 20,
   },
   formContainer: {
     width: '100%',
@@ -135,7 +140,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   labelContainer: {
-    backgroundColor: '#2DD881',
+    backgroundColor: '#3B82F6',
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -177,10 +182,10 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   joinButton: {
-    backgroundColor: '#2DD881',
+    backgroundColor: '#3B82F6',
   },
   joinButtonPressed: {
-    backgroundColor: '#25B86D',
+    backgroundColor: '#2563EB',
     opacity: 0.8,
   },
   backButton: {
