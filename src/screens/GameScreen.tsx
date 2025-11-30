@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -11,6 +11,7 @@ import { debounce } from 'lodash';
 type RootStackParamList = {
   Room: { roomCode: string; username: string; players: Player[] };
   Game: { roomCode: string; username: string; players: Player[] };
+  Home: undefined;
 };
 
 type GameScreenProps = {
@@ -18,7 +19,7 @@ type GameScreenProps = {
   route: RouteProp<RootStackParamList, 'Game'>;
 };
 
-const GameScreen = ({ route }: GameScreenProps) => {
+const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const { players: initialPlayers } = route.params;
   const [players, setPlayers] = useState<GamePlayer[]>(() =>
     initialPlayers.map((p, index) => ({
@@ -32,6 +33,20 @@ const GameScreen = ({ route }: GameScreenProps) => {
 
   const throttledUpdates = useRef<{ [key: string]: ChallengeProgress }>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleLeave = () => {
+    Alert.alert('Leave Game', 'Are you sure you want to leave the game?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Leave',
+        onPress: () => navigation.navigate('Home'),
+        style: 'destructive',
+      },
+    ]);
+  };
 
   const calculateRankings = useCallback(() => {
     setPlayers((prevPlayers) => {
@@ -76,7 +91,6 @@ const GameScreen = ({ route }: GameScreenProps) => {
         });
 
         debouncedCalculateRankings();
-
       }, 100);
     }
   };
@@ -84,6 +98,11 @@ const GameScreen = ({ route }: GameScreenProps) => {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <View style={styles.header}>
+          <Pressable onPress={handleLeave}>
+            <Text style={styles.leaveButtonText}>Leave</Text>
+          </Pressable>
+        </View>
         <View style={styles.leaderboardContainer}>
           <Leaderboard players={players} />
         </View>
@@ -103,6 +122,17 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     paddingHorizontal: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  leaveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    opacity: 0.8,
   },
   leaderboardContainer: {
     flex: 1,
