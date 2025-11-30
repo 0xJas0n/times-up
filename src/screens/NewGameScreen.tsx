@@ -8,6 +8,7 @@ import { generateRoomCode } from '../utils/generateRoomCode';
 type RootStackParamList = {
   Home: undefined;
   NewGame: undefined;
+  Room: { roomCode: string; username: string };
 };
 
 type NewGameScreenProps = {
@@ -23,9 +24,11 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
   }, []);
 
   const handleCreateRoom = () => {
-    console.log('Room Name:', roomName);
-    console.log('Username:', username);
-    // TODO: Implement room creation logic
+    if (!username.trim()) {
+      console.log('Username is required');
+      return;
+    }
+    navigation.navigate('Room', { roomCode: roomName, username: username.trim() });
   };
 
   const handleCancel = () => {
