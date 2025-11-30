@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Player } from './RoomScreen';
 import { ChallengeProgress, GamePlayer } from '../types/challenge';
 import Leaderboard from '../components/Leaderboard';
+import { PatternBackground } from '../components/PatternBackground';
 import { debounce } from 'lodash';
 
 type RootStackParamList = {
@@ -97,6 +98,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 
   return (
     <View style={styles.container}>
+      <PatternBackground speed={10} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Pressable onPress={handleLeave}>
@@ -117,7 +119,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#0F172A',
   },
   safeArea: {
     flex: 1,
