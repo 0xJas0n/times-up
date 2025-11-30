@@ -46,18 +46,9 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     setPlayers((prevPlayers) => [...prevPlayers, newPlayer]);
   };
 
-  /**
-   * Removes a player from the room by their ID
-   * @param id - The unique ID of the player to remove
-   * TODO: Implement connection logic to call this method when players disconnect
-   */
-  const removePlayer = (id: string) => {
-    setPlayers((prevPlayers) => prevPlayers.filter((player) => player.id !== id));
-  };
 
   const handleStart = () => {
-    console.log('Starting game with players:', players);
-    // TODO: Implement game start logic
+    navigation.navigate('Game', { roomCode, username, players });
   };
 
   const handleCancel = () => {

@@ -5,12 +5,15 @@ import HomeScreen from './src/screens/HomeScreen';
 import NewGameScreen from './src/screens/NewGameScreen';
 import JoinGameScreen from './src/screens/JoinGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
+import GameScreen from './src/screens/GameScreen';
+import { Player } from './src/screens/RoomScreen';
 
 type RootStackParamList = {
   Home: undefined;
   NewGame: undefined;
   JoinGame: undefined;
   Room: { roomCode: string; username: string };
+  Game: { roomCode: string; username: string; players: Player[] };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,6 +31,7 @@ export default function App() {
         <Stack.Screen name="NewGame" component={NewGameScreen} />
         <Stack.Screen name="JoinGame" component={JoinGameScreen} />
         <Stack.Screen name="Room" component={RoomScreen} />
+        <Stack.Screen name="Game" component={GameScreen} />
       </Stack.Navigator>
       <StatusBar style="light" />
     </NavigationContainer>
