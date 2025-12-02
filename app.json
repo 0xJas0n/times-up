@@ -8,10 +8,22 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "plugins": [
+      "./plugins/withAndroidSdkFix",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["central", "peripheral"],
+          "bluetoothAlwaysPermission": "Allow App to use Bluetooth to find other phones."
+        }
+      ],
+      "expo-location"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.mad.timesup",
