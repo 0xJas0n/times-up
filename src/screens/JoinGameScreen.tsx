@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, Text, View, Pressable, TextInput } from 'react-native';
+import {use, useState} from 'react';
+import { StyleSheet, Text, View, Pressable, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 type RootStackParamList = {
   Home: undefined;
   JoinGame: undefined;
+  Room: { roomCode: string; username: string; isHost: boolean };
 };
 
 type JoinGameScreenProps = {
@@ -19,14 +20,28 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
 
   const handleRoomCodeChange = (text: string) => {
     // Only allow alphanumeric characters and convert to uppercase
-    const alphanumeric = text.replace(/[^a-zA-Z0-9]/g, '');
-    setRoomCode(alphanumeric.toUpperCase());
+    const hex = text.replace(/[^a-fA-F0-9]/g, '');
+    setRoomCode(hex.toUpperCase());
   };
 
   const handleJoinRoom = () => {
-    console.log('Room Code:', roomCode);
-    console.log('Username:', username);
-    // TODO: Implement room joining logic
+    if (roomCode.length !== 4) {
+      Alert.alert('Invalid Room Code', 'Please enter a 4-character room code.');
+      return;
+    }
+    if (!username.trim()) {
+      Alert.alert('Missing Name', 'Please enter your name to join.');
+      return;
+    }
+
+    // Truncate username to 8 chars to fit in Bluetooth Packet
+    const safeName = username.trim().substring(0, 8);
+
+    navigation.navigate('Room', {
+      roomCode,
+      username: safeName,
+      isHost: false
+    });
   };
 
   const handleBack = () => {

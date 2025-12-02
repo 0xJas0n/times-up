@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { useGameConnection }  from "../hooks/useGameConnection";
 
 type RootStackParamList = {
   Home: undefined;
   NewGame: undefined;
   JoinGame: undefined;
-  Room: { roomCode: string; username: string };
+  Room: { roomCode: string; username: string, isHost: boolean };
+  Game: { roomCode: string; username: string; isHost: boolean; players: Player[] };
 };
 
 type RoomScreenProps = {
@@ -24,31 +26,61 @@ export interface Player {
 }
 
 export default function RoomScreen({ navigation, route }: RoomScreenProps) {
-  const { roomCode, username } = route.params;
+  const { roomCode, username, isHost = false } = route.params;
   const [players, setPlayers] = useState<Player[]>([]);
 
+  const { startHostingGame, joinGame, broadcastGameState, lastMessage } = useGameConnection();
+
+  // Initialization
   useEffect(() => {
-    // Automatically add the creator as the first player (host)
-    addPlayer(username, true);
+    addPlayer(username, isHost);
+
+    if (isHost) {
+      startHostingGame(roomCode, username);
+    } else {
+      joinGame(roomCode, username);
+    }
   }, []);
 
-  /**
-   * Adds a new player to the room
-   * @param name - The player's name
-   * @param isHost - Whether the player is the host (default: false)
-   */
-  const addPlayer = (name: string, isHost: boolean = false) => {
-    const newPlayer: Player = {
-      id: Date.now().toString() + Math.random().toString(36),
-      name,
-      isHost,
-    };
-    setPlayers((prevPlayers) => [...prevPlayers, newPlayer]);
+  // Listen for updates
+  useEffect(() => {
+    if (!lastMessage) return;
+
+    if (lastMessage.type === 'JOIN_REQUEST' && lastMessage.name) {
+      addPlayer(lastMessage.name, lastMessage.isHost);
+    }
+
+    if (!isHost && lastMessage.status === 'GAME_START') {
+      navigateToGame();
+    }
+  }, [lastMessage]);
+
+  const addPlayer = (name: string, playerIsHost: boolean = false) => {
+    setPlayers((prev) => {
+      if (prev.some(p => p.name === name)) return prev;
+
+      return [...prev, {
+        id: name,
+        name,
+        isHost: playerIsHost,
+      }];
+    });
+
   };
 
+  const navigateToGame = () => {
+    navigation.navigate('Game', {
+      roomCode,
+      username,
+      isHost,
+      players
+    });
+  };
 
   const handleStart = () => {
-    navigation.navigate('Game', { roomCode, username, players });
+    if (!isHost) return;
+    broadcastGameState('GAME_START');
+    navigateToGame();
   };
 
   const handleCancel = () => {
@@ -66,7 +98,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
 
           <View style={styles.playersContainer}>
             <View style={styles.playersHeader}>
-              <Text style={styles.playersHeaderText}>Players</Text>
+              <Text style={styles.playersHeaderText}>Players ({players.length})</Text>
             </View>
 
             <ScrollView
@@ -96,16 +128,22 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
           </View>
 
           <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.startButton,
-                pressed && styles.startButtonPressed,
-              ]}
-              onPress={handleStart}
-            >
-              <Text style={styles.buttonText}>Start</Text>
-            </Pressable>
+            {isHost ? (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    styles.startButton,
+                    pressed && styles.startButtonPressed,
+                  ]}
+                  onPress={handleStart}
+                >
+                  <Text style={styles.buttonText}>Start</Text>
+                </Pressable>
+            ) : (
+                <View style={[styles.button, styles.waitingButton]}>
+                  <Text style={styles.waitingText}>Waiting for Host...</Text>
+                </View>
+            )}
 
             <Pressable
               style={({ pressed }) => [
@@ -252,6 +290,16 @@ const styles = StyleSheet.create({
   cancelButtonPressed: {
     backgroundColor: '#C0392B',
     opacity: 0.8,
+  },
+  waitingButton: {
+    backgroundColor: '#334155',
+    borderWidth: 1,
+    borderColor: '#475569',
+  },
+  waitingText: {
+    color: '#94A3B8',
+    fontSize: 18,
+    fontStyle: 'italic',
   },
   buttonText: {
     color: '#000000',

@@ -1,31 +1,25 @@
+// ... existing imports
 import { BleManager, Device } from 'react-native-ble-plx';
 import BLEAdvertiser from 'react-native-ble-advertiser';
 import { Platform, PermissionsAndroid } from 'react-native';
 import { encode, decode } from 'base-64';
 
 // --- CONFIGURATION ---
-const BASE_UUID_PREFIX = '0000';
-const BASE_UUID_SUFFIX = '-0000-1000-8000-00805f9b34fb';
+const APP_SERVICE_UUID = '0000FF00-0000-1000-8000-00805f9b34fb';
 
-// Short keys to save bytes (Max 31 bytes payload!)
-// t: type, p: payload, i: id
-export type PacketType = 'HOST_STATE' | 'PLAYER_ACTION';
-
-interface TransportPacket {
-    t: PacketType;
-    p: any;
-    i?: string; // sender ID
-}
+// --- TINY PROTOCOL ---
+export const PROTOCOL = {
+    HOST_LOBBY: '0',
+    HOST_GAME_START: '1',
+    PLAYER_JOIN: '2',
+    PLAYER_FINISHED: '3',
+};
 
 class BluetoothManagerService {
     private manager: BleManager;
     private roomCode: string | null = null;
-    private role: 'HOST' | 'CLIENT' | null = null;
     private isScanning = false;
-
-    // We keep track of the last packet we saw from each device to avoid spamming UI
     private lastSeenPackets: Record<string, string> = {};
-
     private listeners: ((payload: any, senderId: string) => void)[] = [];
 
     constructor() {
@@ -33,7 +27,6 @@ class BluetoothManagerService {
         BLEAdvertiser.setCompanyId(0x00E0);
     }
 
-    // --- 1. SETUP & PERMISSIONS ---
     async requestPermissions(): Promise<boolean> {
         if (Platform.OS === 'android') {
             if (Platform.Version >= 31) {
@@ -52,49 +45,45 @@ class BluetoothManagerService {
         return true;
     }
 
-    // --- 2. BROADCASTING (SENDING DATA) ---
-    // In the real app, we update our "Broadcast" whenever our state changes.
-    async broadcastStatus(type: PacketType, payload: any) {
+    // --- BROADCASTING ---
+    async broadcastStatus(actionKey: string, data: any = '') {
         if (!this.roomCode) return;
 
-        // 1. Pack data. Keep it TINY.
-        // Example: { t: 'H', p: { r: 1 } } -> JSON
-        const packet: TransportPacket = { t: type, p: payload };
+        let dataString = data;
+        if (typeof data === 'object') {
+            try {
+                dataString = JSON.stringify(data);
+            } catch (e) {
+                dataString = '';
+            }
+        }
 
-        // We serialize to a string. Note: Bluetooth packets are small (31 bytes).
-        // In a full production app, you might use a byte array or specialized encoder.
-        // For now, we assume simple small JSON.
-        const dataString = JSON.stringify(packet);
-        const manufacturerData = this.stringToBytes(dataString);
-
-        const serviceUUID = this.getRoomUUID(this.roomCode);
+        const payload = `${this.roomCode}|${actionKey}|${dataString}`;
+        const manufacturerData = this.stringToBytes(payload);
 
         try {
-            // We stop previous broadcast to update data
             await BLEAdvertiser.stopBroadcast();
-            await BLEAdvertiser.broadcast(serviceUUID, manufacturerData, {
-                includeTxPowerLevel: false, // Save space
-                includeDeviceName: false,   // Save space
+            await BLEAdvertiser.broadcast(APP_SERVICE_UUID, manufacturerData, {
+                includeTxPowerLevel: false,
+                includeDeviceName: false,
             });
-            console.log(`[BLE] Broadcasting: ${dataString}`);
+            // console.log(`[BLE] Broadcasting: ${payload}`);
         } catch (e) {
-            console.warn('[BLE] Broadcast update failed', e);
+            console.warn('[BLE] Broadcast failed', e);
         }
     }
 
-    // --- 3. SCANNING (RECEIVING DATA) ---
+    // --- SCANNING ---
     startScanning(roomCode: string) {
         this.roomCode = roomCode;
         if (this.isScanning) return;
 
-        const serviceUUID = this.getRoomUUID(roomCode);
-        console.log(`[BLE] Started scanning for Room ${roomCode}`);
+        console.log(`[BLE] Scanning for Room ${roomCode}...`);
         this.isScanning = true;
 
-        this.manager.startDeviceScan([serviceUUID], { allowDuplicates: true }, (error, device) => {
+        // Scan for ALL devices (null) to ensure we hit the manufacturer data on all Android versions
+        this.manager.startDeviceScan(null, { allowDuplicates: true }, (error, device) => {
             if (error) {
-                console.warn('[BLE] Scan error', error);
-                // In production, we might want to restart the scan after a delay
                 return;
             }
 
@@ -106,32 +95,31 @@ class BluetoothManagerService {
 
     private handleDeviceDiscovery(device: Device) {
         try {
-            // Decode the Manufacturer Data (The "Payload")
-            const rawBytes = decode(device.manufacturerData!);
-            // Need to strip the first 2 bytes (Company ID) usually, but ble-plx might give raw.
-            // Let's attempt to parse the string.
-            // Note: In real production, we do robust byte parsing here.
+            const rawString = decode(device.manufacturerData!);
+            const cleanString = rawString.replace(/[^\x20-\x7E]/g, '');
 
-            // Heuristic: Extract the JSON part.
-            // React Native BLE PLX returns Base64. decode() gives binary string.
-            // We look for the start of JSON '{'
-            const jsonStartIndex = rawBytes.indexOf('{');
-            if (jsonStartIndex === -1) return;
+            // Optimization: Packet must contain at least RoomCode (4) + Separator (1) + Type (1)
+            if (cleanString.length < 6) return;
 
-            const jsonString = rawBytes.substring(jsonStartIndex);
-
-            // Deduplicate: Don't process the exact same packet 60 times a second
-            const uniqueKey = device.id + jsonString;
+            const uniqueKey = device.id + cleanString;
             if (this.lastSeenPackets[device.id] === uniqueKey) return;
             this.lastSeenPackets[device.id] = uniqueKey;
 
-            const packet: TransportPacket = JSON.parse(jsonString);
+            // PARSE: "ROOM|TYPE|DATA"
+            const parts = cleanString.split('|');
+            if (parts.length < 2) return;
 
-            // Notify Listeners (The UI)
-            this.notifyListeners(packet.p, device.id);
+            const incomingRoom = parts[0];
+            const type = parts[1];
+            const data = parts.slice(2).join('|');
+
+            // Filter: Only accept packets for our room
+            if (incomingRoom !== this.roomCode) return;
+
+            this.notifyListeners({ type, data }, device.id);
 
         } catch (e) {
-            // Ignore malformed packets (background noise)
+            // Ignore parse errors
         }
     }
 
@@ -142,19 +130,9 @@ class BluetoothManagerService {
         this.roomCode = null;
     }
 
-    // --- HELPERS ---
-    private getRoomUUID(code: string): string {
-        return `${BASE_UUID_PREFIX}${code}${BASE_UUID_SUFFIX}`;
-    }
-
     private stringToBytes(str: string): number[] {
-        // Simple ASCII conversion for JSON
         const bytes = [];
-        // Add dummy company ID (2 bytes) at start if needed, or BLEAdvertiser handles it.
-        // We just pass payload.
-        for (let i = 0; i < str.length; i++) {
-            bytes.push(str.charCodeAt(i));
-        }
+        for (let i = 0; i < str.length; i++) bytes.push(str.charCodeAt(i));
         return bytes;
     }
 

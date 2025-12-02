@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, TextInput } from 'react-native';
+import { StyleSheet, Text, View, Pressable, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -8,7 +8,7 @@ import { generateRoomCode } from '../utils/generateRoomCode';
 type RootStackParamList = {
   Home: undefined;
   NewGame: undefined;
-  Room: { roomCode: string; username: string };
+  Room: { roomCode: string; username: string; isHost: boolean };
 };
 
 type NewGameScreenProps = {
@@ -25,10 +25,14 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
 
   const handleCreateRoom = () => {
     if (!username.trim()) {
-      console.log('Username is required');
+      Alert.alert('Missing Name', 'Please enter your name to create a room.');
       return;
     }
-    navigation.navigate('Room', { roomCode: roomName, username: username.trim() });
+    navigation.navigate('Room', {
+      roomCode: roomName,
+      username: username.trim(),
+      isHost: true
+    });
   };
 
   const handleCancel = () => {

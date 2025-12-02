@@ -1,9 +1,5 @@
-/**
- * Generates a random 4-character uppercase alphanumeric room code
- * @returns A random code (e.g., "A3K9", "7XP2")
- */
 export const generateRoomCode = (): string => {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const characters = '0123456789ABCDEF';
   let code = '';
 
   for (let i = 0; i < 4; i++) {
