@@ -1,7 +1,7 @@
 import { BleManager, Device } from 'react-native-ble-plx';
 import BLEAdvertiser from 'react-native-ble-advertiser';
 import { Platform, PermissionsAndroid } from 'react-native';
-import { encode, decode } from 'base-64';
+import { decode } from 'base-64';
 
 const APP_SERVICE_UUID = '0000FF00-0000-1000-8000-00805f9b34fb';
 
