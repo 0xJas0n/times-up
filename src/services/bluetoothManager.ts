@@ -23,6 +23,14 @@ class BluetoothManagerService {
 
     constructor() {
         this.manager = new BleManager();
+        this.manager.onStateChange((state) => {
+            if (state === 'PoweredOn') {
+                this.init();
+            }
+        }, true);
+    }
+
+    init() {
         BLEAdvertiser.setCompanyId(0x00E0);
     }
 
