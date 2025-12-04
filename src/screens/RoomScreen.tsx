@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RouteProp } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useGameConnection }  from "../hooks/useGameConnection";
 
 type RootStackParamList = {
@@ -14,10 +13,7 @@ type RootStackParamList = {
   Game: { roomCode: string; username: string; isHost: boolean; players: Player[] };
 };
 
-type RoomScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Room'>;
-  route: RouteProp<RootStackParamList, 'Room'>;
-};
+type RoomScreenProps = NativeStackScreenProps<RootStackParamList, 'Room'>;
 
 export interface Player {
   id: string;

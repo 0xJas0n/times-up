@@ -12,8 +12,8 @@ type RootStackParamList = {
   Home: undefined;
   NewGame: undefined;
   JoinGame: undefined;
-  Room: { roomCode: string; username: string };
-  Game: { roomCode: string; username: string; players: Player[] };
+  Room: { roomCode: string; username: string; isHost: boolean };
+  Game: { roomCode: string; username: string; isHost: boolean; players: Player[] };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
