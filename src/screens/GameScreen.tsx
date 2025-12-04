@@ -1,8 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RouteProp } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Player } from './RoomScreen';
 import { ChallengeProgress, GamePlayer } from '../types/challenge';
 import Leaderboard from '../components/Leaderboard';
@@ -17,10 +16,7 @@ type RootStackParamList = {
   Home: undefined;
 };
 
-type GameScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Game'>;
-  route: RouteProp<RootStackParamList, 'Game'>;
-};
+type GameScreenProps = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
 const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const { roomCode, username, isHost, players: initialPlayers } = route.params;
