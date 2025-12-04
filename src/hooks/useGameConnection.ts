@@ -1,13 +1,26 @@
-import { useEffect, useState } from 'react';
-import { BluetoothManager, PROTOCOL } from '../services/bluetoothManager';
+import { useEffect, useState, useRef } from 'react';
+import { NetworkManager, PROTOCOL } from '../services/networkManager';
+import { ZeroconfService } from '../types/zeroconf';
 
 export const useGameConnection = () => {
     const [lastMessage, setLastMessage] = useState<any>(null);
+    const [availableGames, setAvailableGames] = useState<ZeroconfService[]>([]);
     const [isScanning, setIsScanning] = useState(false);
+    const roomCodeRef = useRef<string | null>(null);
 
     useEffect(() => {
-        const unsubscribe = BluetoothManager.subscribe((payload, senderId) => {
+        const unsubscribe = NetworkManager.subscribe((payload) => {
             let formattedMsg = null;
+
+            if (payload.type === 'SERVICE_FOUND') {
+                setAvailableGames(prev => {
+                    if (prev.find(s => s.name === payload.service.name)) {
+                        return prev;
+                    }
+                    return [...prev, payload.service];
+                });
+                return;
+            }
 
             switch (payload.type) {
                 case PROTOCOL.HOST_LOBBY:
@@ -37,58 +50,61 @@ export const useGameConnection = () => {
 
         return () => {
             unsubscribe();
+            NetworkManager.stop();
         };
     }, []);
 
     const startHostingGame = async (roomCode: string, playerName: string) => {
-        const granted = await BluetoothManager.requestPermissions();
-
-        if (!granted) {
-            return;
-        }
-
-        BluetoothManager.startScanning(roomCode);
-        setIsScanning(true);
-        await BluetoothManager.broadcastStatus(PROTOCOL.HOST_LOBBY, playerName);
+        roomCodeRef.current = roomCode;
+        await NetworkManager.createHost(12345, roomCode);
+        NetworkManager.broadcast(PROTOCOL.HOST_LOBBY, playerName);
     };
 
-    const joinGame = async (roomCode: string, playerName: string) => {
-        const granted = await BluetoothManager.requestPermissions();
-
-        if (!granted) {
-            return;
-        }
-
-        BluetoothManager.startScanning(roomCode);
-        setIsScanning(true);
-        await BluetoothManager.broadcastStatus(PROTOCOL.PLAYER_JOIN, playerName);
+    const joinGame = async (service: ZeroconfService, playerName: string) => {
+        roomCodeRef.current = service.name;
+        NetworkManager.connectToHost(service.host, service.port);
+        NetworkManager.broadcast(PROTOCOL.PLAYER_JOIN, playerName);
     };
+
+    const scanForGames = () => {
+        setAvailableGames([]);
+        setIsScanning(true);
+        NetworkManager.startServiceDiscovery();
+    };
+
+    const stopScanning = () => {
+        setIsScanning(false);
+        NetworkManager.stopServiceDiscovery();
+    }
 
     const broadcastGameState = async (state: string, data?: any) => {
         if (state === 'GAME_START') {
-            await BluetoothManager.broadcastStatus(PROTOCOL.HOST_GAME_START, '');
+            NetworkManager.broadcast(PROTOCOL.HOST_GAME_START, '');
         }
 
         if (state === 'START_ROUND') {
-            await BluetoothManager.broadcastStatus(PROTOCOL.HOST_START_ROUND, data.id.toString());
+            NetworkManager.broadcast(PROTOCOL.HOST_START_ROUND, data.id.toString());
         }
 
         if (state === 'ROUND_OVER') {
-            await BluetoothManager.broadcastStatus(PROTOCOL.HOST_ROUND_OVER, data.loser);
+            NetworkManager.broadcast(PROTOCOL.HOST_ROUND_OVER, data.loser);
         }
     };
 
     const sendGameAction = async (actionType: string, data: any) => {
         if (actionType === 'FINISHED') {
-            await BluetoothManager.broadcastStatus(PROTOCOL.PLAYER_FINISHED, data.name);
+            NetworkManager.broadcast(PROTOCOL.PLAYER_FINISHED, data.name);
         }
     };
 
     return {
         lastMessage,
         isScanning,
+        availableGames,
         startHostingGame,
         joinGame,
+        scanForGames,
+        stopScanning,
         sendGameAction,
         broadcastGameState
     };

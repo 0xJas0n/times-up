@@ -82,8 +82,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     console.log(`Player finished: ${playerName} (${finishedPlayers.current.size}/${players.length})`);
 
     if (finishedPlayers.current.size === players.length) {
-      const loser = playerName;
-      endRound(loser);
+      endRound(playerName);
     }
   };
 
@@ -174,7 +173,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     });
   }, []);
 
-  const debouncedCalculateRankings = useRef(debounce(calculateRankings, 50)).current;
 
   // const handleProgressUpdate = (progress: ChallengeProgress) => {
     // throttledUpdates.current[progress.playerId] = progress;

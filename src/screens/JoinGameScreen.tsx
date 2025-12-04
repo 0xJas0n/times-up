@@ -1,13 +1,15 @@
-import {use, useState} from 'react';
-import { StyleSheet, Text, View, Pressable, TextInput, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Pressable, TextInput, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useGameConnection } from '../hooks/useGameConnection';
+import { ZeroconfService } from '../types/zeroconf';
 
 type RootStackParamList = {
   Home: undefined;
   JoinGame: undefined;
-  Room: { roomCode: string; username: string; isHost: boolean };
+  Room: { roomCode: string; username: string; isHost: boolean; service?: ZeroconfService };
 };
 
 type JoinGameScreenProps = {
@@ -15,38 +17,39 @@ type JoinGameScreenProps = {
 };
 
 export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
-  const [roomCode, setRoomCode] = useState('');
   const [username, setUsername] = useState('');
+  const { scanForGames, stopScanning, availableGames, isScanning } = useGameConnection();
 
-  const handleRoomCodeChange = (text: string) => {
-    // Only allow alphanumeric characters and convert to uppercase
-    const hex = text.replace(/[^a-fA-F0-9]/g, '');
-    setRoomCode(hex.toUpperCase());
-  };
+  useEffect(() => {
+    scanForGames();
+    return () => {
+      stopScanning();
+    };
+  }, []);
 
-  const handleJoinRoom = () => {
-    if (roomCode.length !== 4) {
-      Alert.alert('Invalid Room Code', 'Please enter a 4-character room code.');
-      return;
-    }
+  const handleJoinRoom = (service: ZeroconfService) => {
     if (!username.trim()) {
       Alert.alert('Missing Name', 'Please enter your name to join.');
       return;
     }
 
-    // Truncate username to 8 chars to fit in Bluetooth Packet
-    const safeName = username.trim().substring(0, 8);
-
     navigation.navigate('Room', {
-      roomCode,
-      username: safeName,
-      isHost: false
+      roomCode: service.name,
+      username: username.trim(),
+      isHost: false,
+      service,
     });
   };
 
   const handleBack = () => {
     navigation.goBack();
   };
+
+  const renderItem = ({ item }: { item: ZeroconfService }) => (
+    <Pressable style={styles.gameItem} onPress={() => handleJoinRoom(item)}>
+      <Text style={styles.gameName}>{item.name}</Text>
+    </Pressable>
+  );
 
   return (
     <View style={styles.container}>
@@ -58,21 +61,6 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
           </View>
 
           <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <View style={styles.labelContainer}>
-                <Text style={styles.label}>Room code</Text>
-              </View>
-              <TextInput
-                style={styles.input}
-                value={roomCode}
-                onChangeText={handleRoomCodeChange}
-                maxLength={4}
-                autoCapitalize="characters"
-                placeholder="Enter room code"
-                placeholderTextColor="#999"
-              />
-            </View>
-
             <View style={styles.inputGroup}>
               <View style={styles.labelContainer}>
                 <Text style={styles.label}>Your name</Text>
@@ -88,18 +76,19 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
             </View>
           </View>
 
-          <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.joinButton,
-                pressed && styles.joinButtonPressed,
-              ]}
-              onPress={handleJoinRoom}
-            >
-              <Text style={styles.buttonText}>Join</Text>
-            </Pressable>
+          <View style={styles.gameListContainer}>
+            {isScanning && <Text style={styles.loadingText}>Scanning for games...</Text>}
+            <FlatList
+              data={availableGames}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.name}
+              ListEmptyComponent={() => (
+                !isScanning && <Text style={styles.noGamesText}>No games found on the network.</Text>
+              )}
+            />
+          </View>
 
+          <View style={styles.buttonContainer}>
             <Pressable
               style={({ pressed }) => [
                 styles.button,
@@ -118,102 +107,125 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0F172A',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 60,
-  },
-  titleContainer: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
-    letterSpacing: 1,
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: 400,
-    gap: 24,
-  },
-  inputGroup: {
-    width: '100%',
-  },
-  labelContainer: {
-    backgroundColor: '#3B82F6',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  input: {
-    backgroundColor: '#E8E8E8',
-    borderWidth: 2,
-    borderColor: '#CCCCCC',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000000',
-  },
-  buttonContainer: {
-    width: '100%',
-    maxWidth: 400,
-    gap: 16,
-  },
-  button: {
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 56,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  joinButton: {
-    backgroundColor: '#3B82F6',
-  },
-  joinButtonPressed: {
-    backgroundColor: '#2563EB',
-    opacity: 0.8,
-  },
-  backButton: {
-    backgroundColor: '#E74C3C',
-  },
-  backButtonPressed: {
-    backgroundColor: '#C0392B',
-    opacity: 0.8,
-  },
-  buttonText: {
-    color: '#000000',
-    fontSize: 20,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
+    container: {
+        flex: 1,
+        backgroundColor: '#0F172A',
+    },
+    safeArea: {
+        flex: 1,
+    },
+    content: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 60,
+    },
+    titleContainer: {
+        backgroundColor: '#3B82F6',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 8,
+        marginBottom: 20,
+    },
+    title: {
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: '#000000',
+        textAlign: 'center',
+        letterSpacing: 1,
+    },
+    formContainer: {
+        width: '100%',
+        maxWidth: 400,
+        gap: 24,
+    },
+    inputGroup: {
+        width: '100%',
+    },
+    labelContainer: {
+        backgroundColor: '#3B82F6',
+        alignSelf: 'flex-start',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 4,
+        marginBottom: 8,
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#000000',
+    },
+    input: {
+        backgroundColor: '#E8E8E8',
+        borderWidth: 2,
+        borderColor: '#CCCCCC',
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#000000',
+    },
+    gameListContainer: {
+        flex: 1,
+        width: '100%',
+        maxWidth: 400,
+        marginTop: 20,
+    },
+    loadingText: {
+        color: 'white',
+        textAlign: 'center',
+        fontSize: 16,
+        marginBottom: 10,
+    },
+    noGamesText: {
+        color: 'white',
+        textAlign: 'center',
+        fontSize: 16,
+        marginTop: 20,
+    },
+    gameItem: {
+        backgroundColor: '#2DD881',
+        padding: 20,
+        borderRadius: 8,
+        marginBottom: 10,
+    },
+    gameName: {
+        color: '#000000',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    buttonContainer: {
+        width: '100%',
+        maxWidth: 400,
+        gap: 16,
+        marginTop: 20,
+    },
+    button: {
+        paddingVertical: 18,
+        paddingHorizontal: 32,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 56,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+    },
+    backButton: {
+        backgroundColor: '#E74C3C',
+    },
+    backButtonPressed: {
+        backgroundColor: '#C0392B',
+        opacity: 0.8,
+    },
+    buttonText: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: '600',
+        letterSpacing: 0.5,
+    },
 });
