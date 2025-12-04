@@ -29,7 +29,8 @@
       "bundleIdentifier": "com.mad.timesup",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect with nearby players for local multiplayer games.",
-        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to host games for other players to join."
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to host games for other players to join.",
+        "UIBackgroundModes": ["bluetooth-central", "bluetooth-peripheral"]
       }
     },
     "android": {
