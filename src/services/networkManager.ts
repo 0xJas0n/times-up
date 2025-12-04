@@ -10,12 +10,15 @@ export const PROTOCOL = {
     PLAYER_FINISHED: '3',
     HOST_START_ROUND: '4',
     HOST_ROUND_OVER: '5',
+    HOST_CANCEL_GAME: '6',
 };
 
 class NetworkManagerService {
     private zeroconf: Zeroconf;
     private server: TcpSocket.Server | null = null;
+    private clients: TcpSocket.Socket[] = [];
     private client: TcpSocket.Socket | null = null;
+    private roomCode: string | null = null;
     private listeners: ((payload: any, senderId: string) => void)[] = [];
 
     constructor() {
@@ -24,6 +27,9 @@ class NetworkManagerService {
         this.zeroconf.on('stop', () => console.log('[Zeroconf] Scan stopped.'));
         this.zeroconf.on('resolved', (service) => {
             this.notifyListeners({ type: 'SERVICE_FOUND', service }, service.host);
+        });
+        this.zeroconf.on('remove', (serviceName) => {
+            this.notifyListeners({ type: 'SERVICE_LOST', serviceName }, 'zeroconf');
         });
         this.zeroconf.on('error', (err) => console.error('[Zeroconf] Error:', err));
     }
@@ -37,16 +43,20 @@ class NetworkManagerService {
     }
 
     async createHost(port: number, roomCode: string) {
+        this.roomCode = roomCode;
         this.zeroconf.publishService('http', 'tcp', SERVICE_DOMAIN, roomCode, port, {});
         this.server = TcpSocket.createServer((socket) => {
+            this.clients.push(socket);
             socket.on('data', (data) => {
                 this.handleData(data, socket.remoteAddress || '');
             });
             socket.on('error', (error) => {
                 console.log('An error ocurred with client socket', error);
+                this.clients = this.clients.filter(s => s !== socket);
             });
             socket.on('close', () => {
                 console.log('Closed connection with', socket.remoteAddress);
+                this.clients = this.clients.filter(s => s !== socket);
             });
         }).listen({ port, host: '0.0.0.0' });
     }
@@ -87,7 +97,9 @@ class NetworkManagerService {
     broadcast(type: string, payload: any) {
         const message = `${type}|${payload}`;
         if (this.server) {
-            // Host broadcasts to all clients
+            this.clients.forEach(client => {
+                client.write(message);
+            });
         } else if (this.client) {
             // Client sends to host
             this.client.write(message);
@@ -108,15 +120,20 @@ class NetworkManagerService {
     stop() {
         this.stopServiceDiscovery();
         if (this.server) {
+            this.broadcast(PROTOCOL.HOST_CANCEL_GAME, '');
             this.server.close();
             this.server = null;
+            this.clients = [];
         }
         if (this.client) {
             this.client.destroy();
             this.client = null;
         }
         this.zeroconf.stop();
-        // this.zeroconf.unpublishService(this.roomCode); // roomCode is not available here
+        if (this.roomCode) {
+            this.zeroconf.unpublishService(this.roomCode);
+            this.roomCode = null;
+        }
     }
 }
 

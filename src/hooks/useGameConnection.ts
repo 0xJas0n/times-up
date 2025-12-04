@@ -22,7 +22,15 @@ export const useGameConnection = () => {
                 return;
             }
 
+            if (payload.type === 'SERVICE_LOST') {
+                setAvailableGames(prev => prev.filter(s => s.name !== payload.serviceName));
+                return;
+            }
+
             switch (payload.type) {
+                case PROTOCOL.HOST_CANCEL_GAME:
+                    formattedMsg = { status: 'HOST_CANCELLED' };
+                    break;
                 case PROTOCOL.HOST_LOBBY:
                     formattedMsg = { type: 'JOIN_REQUEST', name: payload.data, isHost: true };
                     break;

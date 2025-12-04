@@ -61,6 +61,10 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
         if (!isHost && lastMessage.status === 'GAME_START') {
             navigateToGame();
         }
+
+        if (lastMessage.status === 'HOST_CANCELLED') {
+            navigation.navigate('JoinGame');
+        }
     }, [lastMessage]);
 
     const addPlayer = (name: string, playerIsHost: boolean = false) => {
