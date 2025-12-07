@@ -13,25 +13,12 @@
       "backgroundColor": "#ffffff"
     },
     "plugins": [
-      "./plugins/withAndroidSdkFix",
-      [
-        "react-native-ble-plx",
-        {
-          "isBackgroundEnabled": true,
-          "modes": ["central", "peripheral"],
-          "bluetoothAlwaysPermission": "Allow App to use Bluetooth to find other phones."
-        }
-      ],
       "expo-location"
     ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.mad.timesup",
-      "infoPlist": {
-        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect with nearby players for local multiplayer games.",
-        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to host games for other players to join.",
-        "UIBackgroundModes": ["bluetooth-central", "bluetooth-peripheral"]
-      }
+      "infoPlist": {}
     },
     "android": {
       "adaptiveIcon": {
@@ -40,11 +27,6 @@
       },
       "package": "com.mad.timesup",
       "permissions": [
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "BLUETOOTH_CONNECT",
-        "BLUETOOTH_SCAN",
-        "BLUETOOTH_ADVERTISE",
         "ACCESS_FINE_LOCATION"
       ]
     }
