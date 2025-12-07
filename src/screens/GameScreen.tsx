@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { SvgXml } from 'react-native-svg';
 import { Player } from './RoomScreen';
 import { ChallengeProgress, GamePlayer } from '../types/challenge';
 import Leaderboard from '../components/Leaderboard';
@@ -9,6 +10,7 @@ import { PatternBackground } from '../components/PatternBackground';
 import { debounce } from 'lodash';
 import { useGameConnection } from "../hooks/useGameConnection";
 import { CHALLENGES, Challenge, getRandomChallengeID } from "../data/challenges";
+import { ChallengeRenderer } from '../components/challenges/ChallengeRenderer';
 
 type RootStackParamList = {
   Room: { roomCode: string; username: string; players: Player[] };
@@ -18,14 +20,11 @@ type RootStackParamList = {
 
 type GameScreenProps = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
+const BOMB_SVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><g fill="#d35400"><path d="M17.981 2.353a.558.558 0 0 1 1.038 0l.654 1.66c.057.143.17.257.315.314l1.659.654c.47.186.47.852 0 1.038l-1.66.654a.56.56 0 0 0-.314.315l-.654 1.659a.558.558 0 0 1-1.038 0l-.654-1.66a.56.56 0 0 0-.315-.314l-1.659-.654a.558.558 0 0 1 0-1.038l1.66-.654a.56.56 0 0 0 .314-.315z"/><path fill-rule="evenodd" d="M17 14.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0m-5 2.25a.75.75 0 0 0 0-1.5h-2a.75.75 0 0 0 0 1.5zm2-4.25c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5.448-1.5 1-1.5 1 .672 1 1.5M9 14c.552 0 1-.672 1-1.5S9.552 11 9 11s-1 .672-1 1.5.448 1.5 1 1.5" clip-rule="evenodd"/><path d="m16.767 8.294-.75.75a8.6 8.6 0 0 0-1.06-1.061l.75-.75.76.3z"/></g></svg>`;
+
 const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const { roomCode, username, isHost, players: initialPlayers } = route.params;
   const { broadcastGameState, sendGameAction, lastMessage, disconnect, clearLastMessage } = useGameConnection();
-
-  // Clear stale messages on mount
-  useEffect(() => {
-    clearLastMessage();
-  }, []);
 
   const [players, setPlayers] = useState<GamePlayer[]>(() =>
     initialPlayers.map((p, index) => ({
@@ -40,21 +39,33 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(null);
   const [statusText, setStatusText] = useState('Get Ready...');
   const [bombHolder, setBombHolder] = useState<string | null>(null);
-  const [counter, setCounter] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
 
   const throttledUpdates = useRef<{ [key: string]: ChallengeProgress }>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const finishedPlayers = useRef<Set<string>>(new Set());
+  const readyPlayers = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    // Send READY signal when GameScreen mounts
+    sendGameAction('READY', { name: username });
+
     if (isHost) {
-      setTimeout(() => startNewRound(), 3000);
+      // Host marks themselves as ready
+      readyPlayers.current.add(username);
+      checkAllPlayersReady();
     }
   }, []);
 
   useEffect(() => {
     if (!lastMessage) {
+      return;
+    }
+
+    // Only process game-specific messages in GameScreen
+    const gameMessages = ['ROUND_START', 'ROUND_OVER', 'COUNTDOWN', 'PLAYER_READY', 'PLAYER_FINISHED'];
+    if (!gameMessages.includes(lastMessage.type)) {
       return;
     }
 
@@ -64,11 +75,46 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     else if (lastMessage.type === 'ROUND_OVER') {
       endClientRound(lastMessage.loser);
     }
+    else if (lastMessage.type === 'COUNTDOWN') {
+      setCountdownNumber(lastMessage.count);
+    }
+
+    if (isHost && lastMessage.type === 'PLAYER_READY') {
+      handlePlayerReady(lastMessage.name);
+    }
 
     if (isHost && lastMessage.type === 'PLAYER_FINISHED') {
       handlePlayerFinished(lastMessage.name);
     }
   }, [lastMessage]);
+
+  const handlePlayerReady = (playerName: string) => {
+    readyPlayers.current.add(playerName);
+    checkAllPlayersReady();
+  };
+
+  const isCountingDown = useRef(false);
+
+  const checkAllPlayersReady = () => {
+    if (readyPlayers.current.size === players.length && !isCountingDown.current) {
+      isCountingDown.current = true; // Prevent duplicate countdowns
+      readyPlayers.current.clear(); // Clear for next round
+      startCountdown();
+    }
+  };
+
+  const startCountdown = async () => {
+    // Countdown: 3, 2, 1
+    for (let i = 3; i > 0; i--) {
+      broadcastGameState('COUNTDOWN', { count: i });
+      setCountdownNumber(i);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    setCountdownNumber(null);
+    isCountingDown.current = false; // Reset flag
+    startNewRound();
+  };
 
   const startNewRound = () => {
     const nextId = getRandomChallengeID();
@@ -84,7 +130,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }
 
     finishedPlayers.current.add(playerName);
-    console.log(`Player finished: ${playerName} (${finishedPlayers.current.size}/${players.length})`);
 
     if (finishedPlayers.current.size === players.length) {
       endRound(playerName);
@@ -95,18 +140,25 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     broadcastGameState('ROUND_OVER', { loser: loserName });
     endClientRound(loserName);
 
-    setTimeout(() => startNewRound(), 5000);
+    // Wait for players to send READY again for next round
+    readyPlayers.current.clear();
+    setTimeout(() => {
+      // Prompt players to get ready for next round
+      setStatusText('Get ready for next round...');
+    }, 3000);
   }
 
   const startClientRound = (challengeId: number) => {
     const challenge = CHALLENGES[challengeId];
 
     if (challenge) {
+      setCountdownNumber(null); // Clear countdown
       setCurrentChallenge(challenge);
-      setCounter(0);
       setIsFinished(false);
       setStatusText(challenge.instruction);
       setBombHolder(null);
+    } else {
+      console.error('[GameScreen] ERROR: No challenge found for ID:', challengeId);
     }
   };
 
@@ -119,25 +171,21 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       ...p,
       hasBomb: p.name === loser
     })));
-  };
 
-  const handleAction = () => {
-    if (!currentChallenge || isFinished) {
-      return;
-    }
+    // After 3 seconds, send READY for next round
+    setTimeout(() => {
+      setBombHolder(null);
+      setStatusText('Get ready for next round...');
+      sendGameAction('READY', { name: username });
 
-    if (currentChallenge.type === 'TAP') {
-      const newVal = counter + 1;
-      setCounter(newVal);
-      if (newVal >= (currentChallenge.target || 10)) {
-        finishChallenge();
+      if (isHost) {
+        readyPlayers.current.add(username);
+        checkAllPlayersReady();
       }
-    }
-    // TODO: Add other challenge types
-    // TODO: Component for each challenge type
+    }, 3000);
   };
 
-  const finishChallenge = () => {
+  const handleChallengeComplete = () => {
     setIsFinished(true);
     setStatusText('Waiting for others...');
 
@@ -224,31 +272,24 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
           <Leaderboard players={players} />
         </View>
 
-        {/* Game Interaction Section (added completley) */}
+        {/* Game Interaction Section */}
         <View style={styles.challengeContainer}>
-          {bombHolder ? (
+          {countdownNumber !== null ? (
               <View style={styles.centerBox}>
-                <Text style={styles.bombText}>💣</Text>
+                <Text style={styles.countdownText}>{countdownNumber}</Text>
+              </View>
+          ) : bombHolder ? (
+              <View style={styles.centerBox}>
+                <SvgXml xml={BOMB_SVG} width={120} height={120} />
                 <Text style={styles.statusText}>{statusText}</Text>
               </View>
           ) : currentChallenge ? (
               <View style={styles.activeChallenge}>
-                <Text style={styles.challengeTitle}>{currentChallenge.title}</Text>
-                <Text style={styles.instruction}>{currentChallenge.instruction}</Text>
-                {currentChallenge.type === 'TAP' && (
-                    <Pressable
-                        style={[styles.tapBtn, isFinished && styles.disabledBtn]}
-                        onPress={handleAction}
-                        disabled={isFinished}
-                    >
-                      <Text style={styles.tapText}>
-                        {isFinished ? 'DONE!' : 'TAP!'}
-                      </Text>
-                    </Pressable>
-                )}
-                <Text style={styles.progress}>
-                  {counter} / {currentChallenge.target}
-                </Text>
+                <ChallengeRenderer
+                  challenge={currentChallenge}
+                  onComplete={handleChallengeComplete}
+                  disabled={isFinished}
+                />
               </View>
           ) : (
               <Text style={styles.statusText}>{statusText}</Text>
@@ -344,6 +385,16 @@ const styles = StyleSheet.create({
   bombText: {
     fontSize: 80,
     marginBottom: 20,
+  },
+  bombImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  countdownText: {
+    fontSize: 120,
+    fontWeight: 'bold',
+    color: '#2DD881',
   },
   centerBox: {
     alignItems: 'center',

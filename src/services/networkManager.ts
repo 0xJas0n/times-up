@@ -9,6 +9,8 @@ export const PROTOCOL = {
     PLAYER_LIST: 'PLAYER_LIST',           // Host -> All: JSON array of players
     PLAYER_DISCONNECT: 'PLAYER_DISCONNECT', // Internal: player disconnected
     GAME_START: 'GAME_START',             // Host -> All: game starting
+    PLAYER_READY: 'PLAYER_READY',         // Client -> Host: player ready in GameScreen
+    COUNTDOWN: 'COUNTDOWN',               // Host -> All: countdown number (3, 2, 1)
     PLAYER_FINISHED: 'PLAYER_FINISHED',   // Client -> Host: player name who finished
     ROUND_START: 'ROUND_START',           // Host -> All: round ID
     ROUND_OVER: 'ROUND_OVER',             // Host -> All: loser name
@@ -24,17 +26,17 @@ class NetworkManagerService {
     private roomCode: string | null = null;
     private listeners: ((payload: any, senderId: string) => void)[] = [];
 
+    // Singleton message state that persists across screen navigation
+    private currentMessage: any = null;
+
+    // Buffer for incomplete messages (TCP stream can split messages)
+    private clientBuffer: string = '';
+    private serverBuffers: Map<TcpSocket.Socket, string> = new Map();
+
     constructor() {
         this.zeroconf = new Zeroconf();
-        this.zeroconf.on('start', () => console.log('[Zeroconf] Scan started.'));
-        this.zeroconf.on('stop', () => console.log('[Zeroconf] Scan stopped.'));
-        this.zeroconf.on('resolved', (service) => {
-            this.notifyListeners({ type: 'SERVICE_FOUND', service }, service.host);
-        });
-        this.zeroconf.on('remove', (serviceName) => {
-            this.notifyListeners({ type: 'SERVICE_LOST', serviceName }, 'zeroconf');
-        });
-        this.zeroconf.on('error', (err) => console.error('[Zeroconf] Error:', err));
+        // Note: Zeroconf instance kept for host service publishing only
+        // Service discovery is now handled directly in JoinGameScreen
     }
 
     startServiceDiscovery() {
@@ -48,8 +50,7 @@ class NetworkManagerService {
     async createHost(port: number, roomCode: string) {
         // Prevent creating server if one already exists
         if (this.server) {
-            console.warn('Server already exists, stopping old server first');
-            this.stop();
+            await this.stop();
         }
 
         this.roomCode = roomCode;
@@ -60,11 +61,10 @@ class NetworkManagerService {
                 this.handleData(data, socket.remoteAddress || '', socket);
             });
             socket.on('error', (error) => {
-                console.log('An error occurred with client socket', error);
+                console.error('[NetworkManager] Client socket error:', error);
                 this.handleClientDisconnect(socket);
             });
             socket.on('close', () => {
-                console.log('Closed connection with', socket.remoteAddress);
                 this.handleClientDisconnect(socket);
             });
         }).listen({ port, host: '0.0.0.0' });
@@ -74,6 +74,7 @@ class NetworkManagerService {
         const playerName = this.clientPlayerMap.get(socket);
         this.clients = this.clients.filter(s => s !== socket);
         this.clientPlayerMap.delete(socket);
+        this.serverBuffers.delete(socket); // Clear buffer for this client
 
         // Notify listeners that a player disconnected
         if (playerName) {
@@ -84,65 +85,101 @@ class NetworkManagerService {
     connectToHost(host: string, port: number, onConnected?: () => void) {
         // Prevent creating client if one already exists
         if (this.client) {
-            console.warn('Client already exists, closing old connection first');
             try {
                 // Remove all event listeners before destroying
                 this.client.removeAllListeners();
                 this.client.destroy();
             } catch (e) {
-                console.error('Error destroying old client:', e);
+                console.error('[NetworkManager] Error destroying old client:', e);
             }
             this.client = null;
         }
 
-        this.client = TcpSocket.createConnection({ port, host }, () => {
-            console.log('Connected to server!');
+        const socket = TcpSocket.createConnection({ port, host }, () => {
             if (onConnected) {
                 onConnected();
             }
         });
 
-        this.client.on('data', (data) => {
+        // Set up event listeners BEFORE assigning to this.client
+        socket.on('data', (data) => {
             this.handleData(data, host);
         });
 
-        this.client.on('error', (error) => {
-            console.log(error);
+        socket.on('error', (error) => {
+            console.error('[NetworkManager] Client socket error:', error);
         });
 
-        this.client.on('close', () => {
-            console.log('Connection closed');
+        socket.on('close', (hadError) => {
+            if (hadError) {
+                console.error('[NetworkManager] Client socket closed with error');
+            }
         });
+
+        // Assign to this.client AFTER setting up listeners
+        this.client = socket;
     }
 
     private handleData(data: Buffer | string, senderId: string, socket?: TcpSocket.Socket) {
         try {
-            const message = data.toString();
-            const parts = message.split('|');
-            if (parts.length < 2) return;
+            const chunk = data.toString();
 
-            const type = parts[0];
-            const payload = parts.slice(1).join('|');
+            // Get the appropriate buffer
+            let buffer = socket ? (this.serverBuffers.get(socket) || '') : this.clientBuffer;
+            buffer += chunk;
 
-            // Track player name for this socket when they join
-            if (type === PROTOCOL.PLAYER_JOIN && socket) {
-                this.clientPlayerMap.set(socket, payload);
+            // Split by newline delimiter to get complete messages
+            const messages = buffer.split('\n');
+
+            // Last element might be incomplete, save it for next data event
+            const incompleteMessage = messages.pop() || '';
+
+            // Store buffer back
+            if (socket) {
+                this.serverBuffers.set(socket, incompleteMessage);
+            } else {
+                this.clientBuffer = incompleteMessage;
             }
 
-            this.notifyListeners({ type, data: payload }, senderId);
+            // Process each complete message
+            for (const message of messages) {
+                if (!message.trim()) continue; // Skip empty messages
+
+                const parts = message.split('|');
+                if (parts.length < 2) continue;
+
+                const type = parts[0];
+                const payload = parts.slice(1).join('|');
+
+                // Track player name for this socket when they join
+                if (type === PROTOCOL.PLAYER_JOIN && socket) {
+                    this.clientPlayerMap.set(socket, payload);
+                }
+
+                this.notifyListeners({ type, data: payload }, senderId);
+            }
         } catch (e) {
-            // Ignore parse errors
+            console.error('[NetworkManager] Error handling data:', e);
         }
     }
 
     broadcast(type: string, payload: any) {
-        const message = `${type}|${payload}`;
+        // Add newline delimiter to separate messages in the TCP stream
+        const message = `${type}|${payload}\n`;
         if (this.server) {
-            this.clients.forEach(client => {
-                client.write(message);
+            this.clients.forEach((client) => {
+                try {
+                    client.write(message);
+                } catch (e) {
+                    console.error('[NetworkManager] Error writing to client:', e);
+                }
             });
         } else if (this.client) {
-            this.client.write(message);
+            try {
+                this.client.write(message);
+            } catch (e) {
+                console.error('[NetworkManager] Error writing to server:', e);
+            }
         }
     }
 
@@ -154,7 +191,17 @@ class NetworkManagerService {
     }
 
     private notifyListeners(payload: any, senderId: string) {
+        // Store the message in singleton state
+        this.currentMessage = payload;
         this.listeners.forEach(l => l(payload, senderId));
+    }
+
+    getCurrentMessage() {
+        return this.currentMessage;
+    }
+
+    clearCurrentMessage() {
+        this.currentMessage = null;
     }
 
     async stop() {
@@ -178,11 +225,12 @@ class NetworkManagerService {
                 try {
                     client.destroy();
                 } catch (e) {
-                    console.error('Error closing client socket', e);
+                    console.error('[NetworkManager] Error closing client socket:', e);
                 }
             });
             this.clients = [];
             this.clientPlayerMap.clear();
+            this.serverBuffers.clear(); // Clear all client buffers
 
             // Close the server
             if (this.server) {
@@ -192,6 +240,7 @@ class NetworkManagerService {
         } else if (this.client) {
             this.client.destroy();
             this.client = null;
+            this.clientBuffer = ''; // Clear client buffer
         }
         this.zeroconf.stop();
     }

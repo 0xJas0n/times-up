@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { StyleSheet, Text, View, Pressable, TextInput, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useGameConnection } from '../hooks/useGameConnection';
+import { useFocusEffect } from '@react-navigation/native';
+import Zeroconf from 'react-native-zeroconf';
 import { ZeroconfService } from '../types/zeroconf';
 
 type RootStackParamList = {
@@ -16,16 +17,55 @@ type JoinGameScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'JoinGame'>;
 };
 
+const SERVICE_DOMAIN = 'local.';
+const SERVICE_TYPE = 'timesup-game';
+
 export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
   const [username, setUsername] = useState('');
-  const { scanForGames, stopScanning, availableGames, isScanning } = useGameConnection();
+  const [availableGames, setAvailableGames] = useState<ZeroconfService[]>([]);
+  const [isScanning, setIsScanning] = useState(false);
+  const zeroconfRef = useRef<Zeroconf | null>(null);
 
-  useEffect(() => {
-    scanForGames();
-    return () => {
-      stopScanning();
-    };
-  }, []);
+  // Only scan for games when this screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      const zeroconf = new Zeroconf();
+      zeroconfRef.current = zeroconf;
+
+      zeroconf.on('start', () => {
+        setIsScanning(true);
+      });
+
+      zeroconf.on('stop', () => {
+        setIsScanning(false);
+      });
+
+      zeroconf.on('resolved', (service: ZeroconfService) => {
+        setAvailableGames(prev => {
+          if (prev.find(s => s.name === service.name)) {
+            return prev;
+          }
+          return [...prev, service];
+        });
+      });
+
+      zeroconf.on('remove', (serviceName: string) => {
+        setAvailableGames(prev => prev.filter(s => s.name !== serviceName));
+      });
+
+      zeroconf.on('error', (err: any) => {
+        console.error('[JoinGameScreen] Zeroconf error:', err);
+      });
+
+      zeroconf.scan(SERVICE_TYPE, 'tcp', SERVICE_DOMAIN);
+
+      return () => {
+        zeroconf.stop();
+        zeroconfRef.current = null;
+        setAvailableGames([]);
+      };
+    }, [])
+  );
 
   const handleJoinRoom = (service: ZeroconfService) => {
     if (!username.trim()) {

@@ -1,29 +1,21 @@
 import { useEffect, useState, useRef } from 'react';
 import { NetworkManager, PROTOCOL } from '../services/networkManager';
-import { ZeroconfService } from '../types/zeroconf';
+import { ZeroconfService } from '../types/zeroconf'; // Still needed for joinGame parameter
 
 export const useGameConnection = () => {
-    const [lastMessage, setLastMessage] = useState<any>(null);
-    const [availableGames, setAvailableGames] = useState<ZeroconfService[]>([]);
-    const [isScanning, setIsScanning] = useState(false);
+    const [lastMessage, setLastMessage] = useState<any>(() => {
+        // Initialize with current message from NetworkManager (if any)
+        const currentMsg = NetworkManager.getCurrentMessage();
+        return currentMsg;
+    });
     const roomCodeRef = useRef<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = NetworkManager.subscribe((payload) => {
             let formattedMsg = null;
 
-            if (payload.type === 'SERVICE_FOUND') {
-                setAvailableGames(prev => {
-                    if (prev.find(s => s.name === payload.service.name)) {
-                        return prev;
-                    }
-                    return [...prev, payload.service];
-                });
-                return;
-            }
-
-            if (payload.type === 'SERVICE_LOST') {
-                setAvailableGames(prev => prev.filter(s => s.name !== payload.serviceName));
+            // Ignore service discovery messages - handled separately in JoinGameScreen
+            if (payload.type === 'SERVICE_FOUND' || payload.type === 'SERVICE_LOST') {
                 return;
             }
 
@@ -45,11 +37,18 @@ export const useGameConnection = () => {
                 case PROTOCOL.GAME_START:
                     formattedMsg = { type: 'GAME_START' };
                     break;
+                case PROTOCOL.PLAYER_READY:
+                    formattedMsg = { type: 'PLAYER_READY', name: payload.data };
+                    break;
+                case PROTOCOL.COUNTDOWN:
+                    formattedMsg = { type: 'COUNTDOWN', count: parseInt(payload.data, 10) };
+                    break;
                 case PROTOCOL.PLAYER_FINISHED:
                     formattedMsg = { type: 'PLAYER_FINISHED', name: payload.data };
                     break;
                 case PROTOCOL.ROUND_START:
-                    formattedMsg = { type: 'ROUND_START', id: parseInt(payload.data, 10) };
+                    const challengeId = parseInt(payload.data, 10);
+                    formattedMsg = { type: 'ROUND_START', id: challengeId };
                     break;
                 case PROTOCOL.ROUND_OVER:
                     formattedMsg = { type: 'ROUND_OVER', loser: payload.data };
@@ -73,31 +72,22 @@ export const useGameConnection = () => {
     const startHostingGame = async (roomCode: string, playerName: string) => {
         roomCodeRef.current = roomCode;
         await NetworkManager.createHost(12345, roomCode);
-        // Don't broadcast yet - no clients connected
     };
 
     const joinGame = async (service: ZeroconfService, playerName: string) => {
         roomCodeRef.current = service.name;
         NetworkManager.connectToHost(service.host, service.port, () => {
-            // Send join request to host once connected
             NetworkManager.broadcast(PROTOCOL.PLAYER_JOIN, playerName);
         });
     };
 
-    const scanForGames = () => {
-        setAvailableGames([]);
-        setIsScanning(true);
-        NetworkManager.startServiceDiscovery();
-    };
-
-    const stopScanning = () => {
-        setIsScanning(false);
-        NetworkManager.stopServiceDiscovery();
-    }
-
     const broadcastGameState = async (state: string, data?: any) => {
         if (state === 'GAME_START') {
             NetworkManager.broadcast(PROTOCOL.GAME_START, '');
+        }
+
+        if (state === 'COUNTDOWN') {
+            NetworkManager.broadcast(PROTOCOL.COUNTDOWN, data.count.toString());
         }
 
         if (state === 'START_ROUND') {
@@ -113,6 +103,10 @@ export const useGameConnection = () => {
         if (actionType === 'FINISHED') {
             NetworkManager.broadcast(PROTOCOL.PLAYER_FINISHED, data.name);
         }
+
+        if (actionType === 'READY') {
+            NetworkManager.broadcast(PROTOCOL.PLAYER_READY, data.name);
+        }
     };
 
     const broadcastPlayerList = (players: any[]) => {
@@ -121,22 +115,19 @@ export const useGameConnection = () => {
 
     const disconnect = async () => {
         await NetworkManager.stop();
-        // Clear lastMessage to prevent stale messages from triggering navigation
+        NetworkManager.clearCurrentMessage();
         setLastMessage(null);
     };
 
     const clearLastMessage = () => {
+        NetworkManager.clearCurrentMessage();
         setLastMessage(null);
     };
 
     return {
         lastMessage,
-        isScanning,
-        availableGames,
         startHostingGame,
         joinGame,
-        scanForGames,
-        stopScanning,
         sendGameAction,
         broadcastGameState,
         broadcastPlayerList,

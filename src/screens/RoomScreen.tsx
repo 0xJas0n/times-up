@@ -41,7 +41,6 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
 
     // Initialization
     useEffect(() => {
-        // Clear any stale messages from previous sessions
         clearLastMessage();
 
         if (isHost) {
@@ -57,11 +56,22 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
             // Client connects and sends join request
             joinGame(service, username);
         }
+
+        return () => {
+            // Note: We don't cleanup connection on unmount because it
+            // should persist when navigating to GameScreen
+        };
     }, []);
 
     // Listen for updates
     useEffect(() => {
         if (!lastMessage) return;
+
+        // Only process room-specific messages in RoomScreen
+        const roomMessages = ['PLAYER_JOIN', 'PLAYER_LIST', 'PLAYER_DISCONNECT', 'GAME_START', 'HOST_CANCEL'];
+        if (!roomMessages.includes(lastMessage.type)) {
+            return;
+        }
 
         // HOST: Receive player join requests
         if (isHost && lastMessage.type === 'PLAYER_JOIN') {
@@ -140,7 +150,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
         });
     };
 
-    const handleStart = () => {
+    const handleStart = async () => {
         if (!isHost) return;
 
         // Require at least 2 players to start
@@ -150,6 +160,10 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
         }
 
         broadcastGameState('GAME_START');
+
+        // Small delay to ensure message is sent before navigation
+        await new Promise(resolve => setTimeout(resolve, 100));
+
         navigateToGame();
     };
 
