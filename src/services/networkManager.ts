@@ -2,21 +2,24 @@ import Zeroconf from 'react-native-zeroconf';
 import TcpSocket from 'react-native-tcp-socket';
 
 const SERVICE_DOMAIN = 'local.';
+const SERVICE_TYPE = 'timesup-game';
 
 export const PROTOCOL = {
-    HOST_LOBBY: '0',
-    HOST_GAME_START: '1',
-    PLAYER_JOIN: '2',
-    PLAYER_FINISHED: '3',
-    HOST_START_ROUND: '4',
-    HOST_ROUND_OVER: '5',
-    HOST_CANCEL_GAME: '6',
+    PLAYER_JOIN: 'PLAYER_JOIN',           // Client -> Host: player name
+    PLAYER_LIST: 'PLAYER_LIST',           // Host -> All: JSON array of players
+    PLAYER_DISCONNECT: 'PLAYER_DISCONNECT', // Internal: player disconnected
+    GAME_START: 'GAME_START',             // Host -> All: game starting
+    PLAYER_FINISHED: 'PLAYER_FINISHED',   // Client -> Host: player name who finished
+    ROUND_START: 'ROUND_START',           // Host -> All: round ID
+    ROUND_OVER: 'ROUND_OVER',             // Host -> All: loser name
+    HOST_CANCEL: 'HOST_CANCEL',           // Host -> All: host cancelled
 };
 
 class NetworkManagerService {
     private zeroconf: Zeroconf;
     private server: TcpSocket.Server | null = null;
     private clients: TcpSocket.Socket[] = [];
+    private clientPlayerMap: Map<TcpSocket.Socket, string> = new Map(); // Track which socket belongs to which player
     private client: TcpSocket.Socket | null = null;
     private roomCode: string | null = null;
     private listeners: ((payload: any, senderId: string) => void)[] = [];
@@ -35,7 +38,7 @@ class NetworkManagerService {
     }
 
     startServiceDiscovery() {
-        this.zeroconf.scan('http', 'tcp', SERVICE_DOMAIN);
+        this.zeroconf.scan(SERVICE_TYPE, 'tcp', SERVICE_DOMAIN);
     }
 
     stopServiceDiscovery() {
@@ -43,27 +46,60 @@ class NetworkManagerService {
     }
 
     async createHost(port: number, roomCode: string) {
+        // Prevent creating server if one already exists
+        if (this.server) {
+            console.warn('Server already exists, stopping old server first');
+            this.stop();
+        }
+
         this.roomCode = roomCode;
-        this.zeroconf.publishService('http', 'tcp', SERVICE_DOMAIN, roomCode, port, {});
+        this.zeroconf.publishService(SERVICE_TYPE, 'tcp', SERVICE_DOMAIN, roomCode, port, {});
         this.server = TcpSocket.createServer((socket) => {
             this.clients.push(socket);
             socket.on('data', (data) => {
-                this.handleData(data, socket.remoteAddress || '');
+                this.handleData(data, socket.remoteAddress || '', socket);
             });
             socket.on('error', (error) => {
-                console.log('An error ocurred with client socket', error);
-                this.clients = this.clients.filter(s => s !== socket);
+                console.log('An error occurred with client socket', error);
+                this.handleClientDisconnect(socket);
             });
             socket.on('close', () => {
                 console.log('Closed connection with', socket.remoteAddress);
-                this.clients = this.clients.filter(s => s !== socket);
+                this.handleClientDisconnect(socket);
             });
         }).listen({ port, host: '0.0.0.0' });
     }
 
-    connectToHost(host: string, port: number) {
+    private handleClientDisconnect(socket: TcpSocket.Socket) {
+        const playerName = this.clientPlayerMap.get(socket);
+        this.clients = this.clients.filter(s => s !== socket);
+        this.clientPlayerMap.delete(socket);
+
+        // Notify listeners that a player disconnected
+        if (playerName) {
+            this.notifyListeners({ type: PROTOCOL.PLAYER_DISCONNECT, data: playerName }, 'server');
+        }
+    }
+
+    connectToHost(host: string, port: number, onConnected?: () => void) {
+        // Prevent creating client if one already exists
+        if (this.client) {
+            console.warn('Client already exists, closing old connection first');
+            try {
+                // Remove all event listeners before destroying
+                this.client.removeAllListeners();
+                this.client.destroy();
+            } catch (e) {
+                console.error('Error destroying old client:', e);
+            }
+            this.client = null;
+        }
+
         this.client = TcpSocket.createConnection({ port, host }, () => {
             console.log('Connected to server!');
+            if (onConnected) {
+                onConnected();
+            }
         });
 
         this.client.on('data', (data) => {
@@ -79,7 +115,7 @@ class NetworkManagerService {
         });
     }
 
-    private handleData(data: Buffer | string, senderId: string) {
+    private handleData(data: Buffer | string, senderId: string, socket?: TcpSocket.Socket) {
         try {
             const message = data.toString();
             const parts = message.split('|');
@@ -87,6 +123,11 @@ class NetworkManagerService {
 
             const type = parts[0];
             const payload = parts.slice(1).join('|');
+
+            // Track player name for this socket when they join
+            if (type === PROTOCOL.PLAYER_JOIN && socket) {
+                this.clientPlayerMap.set(socket, payload);
+            }
 
             this.notifyListeners({ type, data: payload }, senderId);
         } catch (e) {
@@ -101,7 +142,6 @@ class NetworkManagerService {
                 client.write(message);
             });
         } else if (this.client) {
-            // Client sends to host
             this.client.write(message);
         }
     }
@@ -117,23 +157,43 @@ class NetworkManagerService {
         this.listeners.forEach(l => l(payload, senderId));
     }
 
-    stop() {
+    async stop() {
         this.stopServiceDiscovery();
-        if (this.server) {
-            this.broadcast(PROTOCOL.HOST_CANCEL_GAME, '');
-            this.server.close();
-            this.server = null;
-            this.clients = [];
-        }
-        if (this.client) {
-            this.client.destroy();
-            this.client = null;
-        }
-        this.zeroconf.stop();
+
+        // Unpublish service FIRST to prevent new connections
         if (this.roomCode) {
             this.zeroconf.unpublishService(this.roomCode);
             this.roomCode = null;
         }
+
+        if (this.server) {
+            // Notify clients before disconnecting
+            this.broadcast(PROTOCOL.HOST_CANCEL, '');
+
+            // Wait for the message to be sent before destroying connections
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            // Close all client connections
+            this.clients.forEach(client => {
+                try {
+                    client.destroy();
+                } catch (e) {
+                    console.error('Error closing client socket', e);
+                }
+            });
+            this.clients = [];
+            this.clientPlayerMap.clear();
+
+            // Close the server
+            if (this.server) {
+                this.server.close();
+                this.server = null;
+            }
+        } else if (this.client) {
+            this.client.destroy();
+            this.client = null;
+        }
+        this.zeroconf.stop();
     }
 }
 

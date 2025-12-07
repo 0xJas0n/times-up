@@ -47,7 +47,7 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
 
   const renderItem = ({ item }: { item: ZeroconfService }) => (
     <Pressable style={styles.gameItem} onPress={() => handleJoinRoom(item)}>
-      <Text style={styles.gameName}>{item.name}</Text>
+      <Text style={styles.gameName}>#{item.name}</Text>
     </Pressable>
   );
 

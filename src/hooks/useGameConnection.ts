@@ -28,26 +28,34 @@ export const useGameConnection = () => {
             }
 
             switch (payload.type) {
-                case PROTOCOL.HOST_CANCEL_GAME:
-                    formattedMsg = { status: 'HOST_CANCELLED' };
-                    break;
-                case PROTOCOL.HOST_LOBBY:
-                    formattedMsg = { type: 'JOIN_REQUEST', name: payload.data, isHost: true };
-                    break;
-                case PROTOCOL.HOST_GAME_START:
-                    formattedMsg = { status: 'GAME_START' };
-                    break;
                 case PROTOCOL.PLAYER_JOIN:
-                    formattedMsg = { type: 'JOIN_REQUEST', name: payload.data, isHost: false };
+                    formattedMsg = { type: 'PLAYER_JOIN', name: payload.data };
+                    break;
+                case PROTOCOL.PLAYER_LIST:
+                    try {
+                        const players = JSON.parse(payload.data);
+                        formattedMsg = { type: 'PLAYER_LIST', players };
+                    } catch (e) {
+                        console.error('Failed to parse player list', e);
+                    }
+                    break;
+                case PROTOCOL.PLAYER_DISCONNECT:
+                    formattedMsg = { type: 'PLAYER_DISCONNECT', name: payload.data };
+                    break;
+                case PROTOCOL.GAME_START:
+                    formattedMsg = { type: 'GAME_START' };
                     break;
                 case PROTOCOL.PLAYER_FINISHED:
-                    formattedMsg = { type: 'FINISHED', name: payload.data };
+                    formattedMsg = { type: 'PLAYER_FINISHED', name: payload.data };
                     break;
-                case PROTOCOL.HOST_START_ROUND:
-                    formattedMsg = { status: 'START_ROUND', id: parseInt(payload.data, 10) };
+                case PROTOCOL.ROUND_START:
+                    formattedMsg = { type: 'ROUND_START', id: parseInt(payload.data, 10) };
                     break;
-                case PROTOCOL.HOST_ROUND_OVER:
-                    formattedMsg = { status: 'ROUND_OVER', loser: payload.data };
+                case PROTOCOL.ROUND_OVER:
+                    formattedMsg = { type: 'ROUND_OVER', loser: payload.data };
+                    break;
+                case PROTOCOL.HOST_CANCEL:
+                    formattedMsg = { type: 'HOST_CANCEL' };
                     break;
             }
 
@@ -58,20 +66,22 @@ export const useGameConnection = () => {
 
         return () => {
             unsubscribe();
-            NetworkManager.stop();
+            // Don't call NetworkManager.stop() here - connection should persist across screens
         };
     }, []);
 
     const startHostingGame = async (roomCode: string, playerName: string) => {
         roomCodeRef.current = roomCode;
         await NetworkManager.createHost(12345, roomCode);
-        NetworkManager.broadcast(PROTOCOL.HOST_LOBBY, playerName);
+        // Don't broadcast yet - no clients connected
     };
 
     const joinGame = async (service: ZeroconfService, playerName: string) => {
         roomCodeRef.current = service.name;
-        NetworkManager.connectToHost(service.host, service.port);
-        NetworkManager.broadcast(PROTOCOL.PLAYER_JOIN, playerName);
+        NetworkManager.connectToHost(service.host, service.port, () => {
+            // Send join request to host once connected
+            NetworkManager.broadcast(PROTOCOL.PLAYER_JOIN, playerName);
+        });
     };
 
     const scanForGames = () => {
@@ -87,15 +97,15 @@ export const useGameConnection = () => {
 
     const broadcastGameState = async (state: string, data?: any) => {
         if (state === 'GAME_START') {
-            NetworkManager.broadcast(PROTOCOL.HOST_GAME_START, '');
+            NetworkManager.broadcast(PROTOCOL.GAME_START, '');
         }
 
         if (state === 'START_ROUND') {
-            NetworkManager.broadcast(PROTOCOL.HOST_START_ROUND, data.id.toString());
+            NetworkManager.broadcast(PROTOCOL.ROUND_START, data.id.toString());
         }
 
         if (state === 'ROUND_OVER') {
-            NetworkManager.broadcast(PROTOCOL.HOST_ROUND_OVER, data.loser);
+            NetworkManager.broadcast(PROTOCOL.ROUND_OVER, data.loser);
         }
     };
 
@@ -103,6 +113,20 @@ export const useGameConnection = () => {
         if (actionType === 'FINISHED') {
             NetworkManager.broadcast(PROTOCOL.PLAYER_FINISHED, data.name);
         }
+    };
+
+    const broadcastPlayerList = (players: any[]) => {
+        NetworkManager.broadcast(PROTOCOL.PLAYER_LIST, JSON.stringify(players));
+    };
+
+    const disconnect = async () => {
+        await NetworkManager.stop();
+        // Clear lastMessage to prevent stale messages from triggering navigation
+        setLastMessage(null);
+    };
+
+    const clearLastMessage = () => {
+        setLastMessage(null);
     };
 
     return {
@@ -114,6 +138,9 @@ export const useGameConnection = () => {
         scanForGames,
         stopScanning,
         sendGameAction,
-        broadcastGameState
+        broadcastGameState,
+        broadcastPlayerList,
+        disconnect,
+        clearLastMessage
     };
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -36,16 +36,25 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     const { roomCode, username, isHost, service } = route.params;
     const [players, setPlayers] = useState<Player[]>([]);
 
-    const { startHostingGame, joinGame, broadcastGameState, lastMessage } =
+    const { startHostingGame, joinGame, broadcastGameState, broadcastPlayerList, lastMessage, disconnect, clearLastMessage } =
         useGameConnection();
 
     // Initialization
     useEffect(() => {
-        addPlayer(username, isHost);
+        // Clear any stale messages from previous sessions
+        clearLastMessage();
 
         if (isHost) {
+            // Host adds themselves and starts server
+            const initialPlayers = [{
+                id: username,
+                name: username,
+                isHost: true,
+            }];
+            setPlayers(initialPlayers);
             startHostingGame(roomCode, username);
         } else if (service) {
+            // Client connects and sends join request
             joinGame(service, username);
         }
     }, []);
@@ -54,33 +63,73 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     useEffect(() => {
         if (!lastMessage) return;
 
-        if (lastMessage.type === 'JOIN_REQUEST' && lastMessage.name) {
-            addPlayer(lastMessage.name, lastMessage.isHost);
+        // HOST: Receive player join requests
+        if (isHost && lastMessage.type === 'PLAYER_JOIN') {
+            const playerName = lastMessage.name;
+
+            setPlayers(prev => {
+                // Check if player already exists
+                if (prev.some(p => p.name === playerName)) {
+                    // Player reconnected - still broadcast list to sync them
+                    setTimeout(() => {
+                        broadcastPlayerList(prev);
+                    }, 0);
+                    return prev;
+                }
+
+                // Add new player
+                const newPlayers = [
+                    ...prev,
+                    {
+                        id: playerName,
+                        name: playerName,
+                        isHost: false,
+                    },
+                ];
+
+                // Broadcast updated player list to all clients
+                setTimeout(() => {
+                    broadcastPlayerList(newPlayers);
+                }, 0);
+
+                return newPlayers;
+            });
         }
 
-        if (!isHost && lastMessage.status === 'GAME_START') {
+        // HOST: Handle player disconnect
+        if (isHost && lastMessage.type === 'PLAYER_DISCONNECT') {
+            const playerName = lastMessage.name;
+
+            setPlayers(prev => {
+                const newPlayers = prev.filter(p => p.name !== playerName);
+
+                // Broadcast updated player list to remaining clients
+                setTimeout(() => {
+                    broadcastPlayerList(newPlayers);
+                }, 0);
+
+                return newPlayers;
+            });
+        }
+
+        // CLIENT: Receive player list from host
+        if (!isHost && lastMessage.type === 'PLAYER_LIST') {
+            setPlayers(lastMessage.players);
+        }
+
+        // Both host and client: Game starts
+        if (lastMessage.type === 'GAME_START') {
             navigateToGame();
         }
 
-        if (lastMessage.status === 'HOST_CANCELLED') {
-            navigation.navigate('JoinGame');
+        // Client: Host cancelled
+        if (!isHost && lastMessage.type === 'HOST_CANCEL') {
+            (async () => {
+                await disconnect();
+                navigation.navigate('Home');
+            })();
         }
     }, [lastMessage]);
-
-    const addPlayer = (name: string, playerIsHost: boolean = false) => {
-        setPlayers(prev => {
-            if (prev.some(p => p.name === name)) return prev;
-
-            return [
-                ...prev,
-                {
-                    id: name,
-                    name,
-                    isHost: playerIsHost,
-                },
-            ];
-        });
-    };
 
     const navigateToGame = () => {
         navigation.navigate('Game', {
@@ -93,11 +142,19 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
 
     const handleStart = () => {
         if (!isHost) return;
+
+        // Require at least 2 players to start
+        if (players.length < 2) {
+            Alert.alert('Not Enough Players', 'You need at least 2 players to start the game.');
+            return;
+        }
+
         broadcastGameState('GAME_START');
         navigateToGame();
     };
 
-    const handleCancel = () => {
+    const handleCancel = async () => {
+        await disconnect();
         navigation.goBack();
     };
 

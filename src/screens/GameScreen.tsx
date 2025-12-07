@@ -20,7 +20,12 @@ type GameScreenProps = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
 const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const { roomCode, username, isHost, players: initialPlayers } = route.params;
-  const { broadcastGameState, sendGameAction, lastMessage } = useGameConnection();
+  const { broadcastGameState, sendGameAction, lastMessage, disconnect, clearLastMessage } = useGameConnection();
+
+  // Clear stale messages on mount
+  useEffect(() => {
+    clearLastMessage();
+  }, []);
 
   const [players, setPlayers] = useState<GamePlayer[]>(() =>
     initialPlayers.map((p, index) => ({
@@ -53,14 +58,14 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       return;
     }
 
-    if (lastMessage.status === 'START_ROUND') {
+    if (lastMessage.type === 'ROUND_START') {
       startClientRound(lastMessage.id);
     }
-    else if (lastMessage.status === 'ROUND_OVER') {
+    else if (lastMessage.type === 'ROUND_OVER') {
       endClientRound(lastMessage.loser);
     }
 
-    if (isHost && lastMessage.type === 'FINISHED') {
+    if (isHost && lastMessage.type === 'PLAYER_FINISHED') {
       handlePlayerFinished(lastMessage.name);
     }
   }, [lastMessage]);
@@ -146,7 +151,10 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const handleLeave = () => {
     Alert.alert('Leave Game', 'Are you sure you want to leave the game?', [
       { text: 'Cancel', style: 'cancel', },
-      { text: 'Leave', onPress: () => navigation.navigate('Home'), style: 'destructive', },
+      { text: 'Leave', onPress: async () => {
+        await disconnect();
+        navigation.navigate('Home');
+      }, style: 'destructive', },
     ]);
   };
 
