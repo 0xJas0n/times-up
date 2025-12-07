@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { NetworkManager, PROTOCOL } from '../services/networkManager';
-import { ZeroconfService } from '../types/zeroconf'; // Still needed for joinGame parameter
+import { ZeroconfService } from '../types/zeroconf';
 
 export const useGameConnection = () => {
     const [lastMessage, setLastMessage] = useState<any>(() => {
-        // Initialize with current message from NetworkManager (if any)
+        // Initialize with current message from NetworkManager
         const currentMsg = NetworkManager.getCurrentMessage();
         return currentMsg;
     });
@@ -65,7 +65,6 @@ export const useGameConnection = () => {
 
         return () => {
             unsubscribe();
-            // Don't call NetworkManager.stop() here - connection should persist across screens
         };
     }, []);
 

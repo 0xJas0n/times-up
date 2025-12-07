@@ -35,8 +35,6 @@ class NetworkManagerService {
 
     constructor() {
         this.zeroconf = new Zeroconf();
-        // Note: Zeroconf instance kept for host service publishing only
-        // Service discovery is now handled directly in JoinGameScreen
     }
 
     startServiceDiscovery() {

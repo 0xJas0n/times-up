@@ -21,10 +21,7 @@ export const ChallengeRenderer: React.FC<ChallengeRendererProps> = ({
   // Map challenge types to their respective components
   const challengeComponents: Record<string, React.FC<ChallengeProps>> = {
     TAP: TapChallenge,
-    // Add new challenge types here:
-    // SHAKE: ShakeChallenge,
-    // SWIPE: SwipeChallenge,
-    // etc.
+    // TODO: Add new challenge types here
   };
 
   const ChallengeComponent = challengeComponents[challenge.type];
