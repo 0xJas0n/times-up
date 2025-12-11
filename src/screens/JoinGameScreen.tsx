@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Zeroconf from 'react-native-zeroconf';
 import { ZeroconfService } from '../types/zeroconf';
 import { colors } from '../theme/colors';
+import Header from '../components/Header';
 
 type RootStackParamList = {
   Home: undefined;
@@ -82,10 +83,6 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
     });
   };
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
   const renderItem = ({ item }: { item: ZeroconfService }) => (
     <Pressable style={styles.gameItem} onPress={() => handleJoinRoom(item)}>
       <Text style={styles.gameName}>#{item.name}</Text>
@@ -96,11 +93,8 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
     <View style={styles.container}>
       <PatternBackground speed={10} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
+        <Header title="Join Game" />
         <View style={styles.content}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Join Game</Text>
-          </View>
-
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <View style={styles.labelContainer}>
@@ -128,19 +122,6 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
               )}
             />
           </View>
-
-          <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.backButton,
-                pressed && styles.pressedButton,
-              ]}
-              onPress={handleBack}
-            >
-              <Text style={styles.buttonText}>Back</Text>
-            </Pressable>
-          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -158,23 +139,9 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         paddingHorizontal: 20,
         paddingVertical: 60,
-    },
-    titleContainer: {
-        backgroundColor: colors.secondary,
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 8,
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        color: colors.text,
-        textAlign: 'center',
-        letterSpacing: 1,
     },
     formContainer: {
         width: '100%',
@@ -255,13 +222,6 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
-    },
-    backButton: {
-        backgroundColor: colors.error,
-    },
-    pressedButton: {
-        backgroundColor: colors.accent,
-        transform: [{ scale: 0.98 }],
     },
     buttonText: {
         color: colors.text,

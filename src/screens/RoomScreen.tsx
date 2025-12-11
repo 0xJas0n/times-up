@@ -6,6 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useGameConnection } from '../hooks/useGameConnection';
 import { ZeroconfService } from '../types/zeroconf';
 import { colors } from '../theme/colors';
+import Header from '../components/Header';
 
 type RootStackParamList = {
     Home: undefined;
@@ -169,6 +170,10 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     };
 
     const handleCancel = async () => {
+        if (isHost) {
+            broadcastGameState('HOST_CANCEL');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
         await disconnect();
         navigation.goBack();
     };
@@ -177,11 +182,8 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
         <View style={styles.container}>
             <PatternBackground speed={10} tileSize={42} gap={42} />
             <SafeAreaView style={styles.safeArea}>
+                <Header onLeave={handleCancel} title={`Room #${roomCode}`} />
                 <View style={styles.content}>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>Room #{roomCode}</Text>
-                    </View>
-
                     <View style={styles.playersContainer}>
                         <View style={styles.playersHeader}>
                             <Text style={styles.playersHeaderText}>
@@ -240,17 +242,6 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                                 </Text>
                             </View>
                         )}
-
-                        <Pressable
-                            style={({ pressed }) => [
-                                styles.button,
-                                styles.cancelButton,
-                                pressed && styles.cancelButtonPressed,
-                            ]}
-                            onPress={handleCancel}
-                        >
-                            <Text style={styles.buttonText}>Cancel</Text>
-                        </Pressable>
                     </View>
                 </View>
             </SafeAreaView>
@@ -269,23 +260,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 60,
-  },
-  titleContainer: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.text,
-    textAlign: 'center',
-    letterSpacing: 1,
   },
   playersContainer: {
     flex: 1,
@@ -378,12 +355,6 @@ const styles = StyleSheet.create({
   },
   startButtonPressed: {
     backgroundColor: colors.successDark,
-  },
-  cancelButton: {
-    backgroundColor: colors.error,
-  },
-  cancelButtonPressed: {
-    backgroundColor: colors.errorDark,
   },
   waitingButton: {
     backgroundColor: colors.secondary,

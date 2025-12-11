@@ -5,6 +5,7 @@ import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { generateRoomCode } from '../utils/generateRoomCode';
 import { colors } from '../theme/colors';
+import Header from '../components/Header';
 
 type RootStackParamList = {
   Home: undefined;
@@ -36,19 +37,12 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
     });
   };
 
-  const handleCancel = () => {
-    navigation.goBack();
-  };
-
   return (
     <View style={styles.container}>
       <PatternBackground speed={10} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
+        <Header title="New Game" />
         <View style={styles.content}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>New Game</Text>
-          </View>
-
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <View style={styles.labelContainer}>
@@ -90,17 +84,6 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
             >
               <Text style={styles.buttonText}>Create Room</Text>
             </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.cancelButton,
-                pressed && styles.cancelButtonPressed,
-              ]}
-              onPress={handleCancel}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -122,20 +105,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 60,
-  },
-  titleContainer: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.text,
-    textAlign: 'center',
-    letterSpacing: 1,
   },
   formContainer: {
     width: '100%',
@@ -192,12 +161,6 @@ const styles = StyleSheet.create({
   },
   createButtonPressed: {
     backgroundColor: colors.primaryDark,
-  },
-  cancelButton: {
-    backgroundColor: colors.error,
-  },
-  cancelButtonPressed: {
-    backgroundColor: colors.errorDark,
   },
   buttonText: {
     color: colors.text,
