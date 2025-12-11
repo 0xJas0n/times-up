@@ -204,7 +204,6 @@ const GameScreen = ({
                             } else {
                                 loserName = results.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
                             }
-
                             endRound(loserName);
                         }
                     }
