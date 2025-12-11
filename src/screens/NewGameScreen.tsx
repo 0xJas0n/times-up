@@ -84,7 +84,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.createButton,
-                pressed && styles.pressedButton,
+                pressed && styles.createButtonPressed,
               ]}
               onPress={handleCreateRoom}
             >
@@ -95,7 +95,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.cancelButton,
-                pressed && styles.pressedButton,
+                pressed && styles.cancelButtonPressed,
               ]}
               onPress={handleCancel}
             >
@@ -188,14 +188,16 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   createButton: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.primary,
+  },
+  createButtonPressed: {
+    backgroundColor: colors.primaryDark,
   },
   cancelButton: {
     backgroundColor: colors.error,
   },
-  pressedButton: {
-    backgroundColor: colors.accent,
-    transform: [{ scale: 0.98 }],
+  cancelButtonPressed: {
+    backgroundColor: colors.errorDark,
   },
   buttonText: {
     color: colors.text,

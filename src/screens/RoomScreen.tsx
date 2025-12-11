@@ -227,7 +227,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                                 style={({ pressed }) => [
                                     styles.button,
                                     styles.startButton,
-                                    pressed && styles.pressedButton,
+                                    pressed && styles.startButtonPressed,
                                 ]}
                                 onPress={handleStart}
                             >
@@ -245,7 +245,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                             style={({ pressed }) => [
                                 styles.button,
                                 styles.cancelButton,
-                                pressed && styles.pressedButton,
+                                pressed && styles.cancelButtonPressed,
                             ]}
                             onPress={handleCancel}
                         >
@@ -376,12 +376,14 @@ const styles = StyleSheet.create({
   startButton: {
     backgroundColor: colors.success,
   },
+  startButtonPressed: {
+    backgroundColor: colors.successDark,
+  },
   cancelButton: {
     backgroundColor: colors.error,
   },
-  pressedButton: {
-    backgroundColor: colors.accent,
-    transform: [{ scale: 0.98 }],
+  cancelButtonPressed: {
+    backgroundColor: colors.errorDark,
   },
   waitingButton: {
     backgroundColor: colors.secondary,

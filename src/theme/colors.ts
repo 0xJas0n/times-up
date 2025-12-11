@@ -1,13 +1,17 @@
 export const colors = {
-  background: '#1A1A2E', // Deep navy blue
-  primary: '#E94560', // Vibrant pink/red
-  secondary: '#0F3460', // Darker blue
-  accent: '#53D8FB', // Bright cyan
+  background: '#1A1A2E',
+  primary: '#E94560',
+  primaryDark: '#C73A50',
+  secondary: '#0F3460',
+  secondaryDark: '#0A2440',
+  accent: '#53D8FB',
   text: '#FFFFFF',
   textDark: '#000000',
-  success: '#50C878', // Emerald green
-  error: '#FF6B6B', // Soft red
-  warning: '#FFA500', // Orange
+  success: '#50C878',
+  successDark: '#40A060',
+  error: '#FF6B6B',
+  errorDark: '#D95A5A',
+  warning: '#FFA500',
   disabled: '#475569',
   lightGray: '#E8E8E8',
   mediumGray: '#CCCCCC',

@@ -37,7 +37,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.newGameButton,
-                pressed && styles.pressedButton,
+                pressed && styles.newGameButtonPressed,
               ]}
               onPress={handleNewGame}
             >
@@ -48,7 +48,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.joinGameButton,
-                pressed && styles.pressedButton,
+                pressed && styles.joinGameButtonPressed,
               ]}
               onPress={handleJoinGame}
             >
@@ -111,12 +111,14 @@ const styles = StyleSheet.create({
   newGameButton: {
     backgroundColor: colors.primary,
   },
+  newGameButtonPressed: {
+    backgroundColor: colors.primaryDark,
+  },
   joinGameButton: {
     backgroundColor: colors.secondary,
   },
-  pressedButton: {
-    backgroundColor: colors.accent,
-    transform: [{ scale: 0.98 }],
+  joinGameButtonPressed: {
+    backgroundColor: colors.secondaryDark,
   },
   buttonText: {
     color: colors.text,
