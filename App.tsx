@@ -8,7 +8,7 @@ import RoomScreen from './src/screens/RoomScreen';
 import GameScreen from './src/screens/GameScreen';
 import WinnerScreen from './src/screens/WinnerScreen';
 import { Player } from './src/screens/RoomScreen';
-import { ZeroconfService } from 'react-native-zeroconf';
+import ZeroconfService from 'react-native-zeroconf';
 
 type RootStackParamList = {
   Home: undefined;
