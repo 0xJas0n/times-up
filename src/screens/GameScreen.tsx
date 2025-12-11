@@ -2,7 +2,6 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Alert, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {Player} from './RoomScreen';
 import {GamePlayer} from '../types/challenge';
 import Leaderboard from '../components/Leaderboard';
 import {PatternBackground} from '../components/PatternBackground';
@@ -13,25 +12,8 @@ import {CountdownView} from '../components/game/CountdownView';
 import {BombView} from '../components/game/BombView';
 import {ChallengeView} from '../components/game/ChallengeView';
 import {colors} from '../theme/colors';
+import {RootStackParamList} from '../navigation/types';
 import Header from '../components/Header';
-
-type RootStackParamList = {
-    Room: {
-        roomCode: string;
-        username: string;
-        players: Player[]
-    };
-    Game: {
-        roomCode: string;
-        username: string;
-        isHost: boolean;
-        players: Player[]
-    };
-    Home: undefined;
-    Winner: {
-        winnerName: string
-    };
-};
 
 type GameScreenProps = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -62,7 +44,6 @@ const GameScreen = ({
             isNextRecipient: false,
         }))
     );
-
     const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(null);
     const [statusText, setStatusText] = useState('Get Ready...');
     const [bombHolder, setBombHolder] = useState<string | null>(null);
