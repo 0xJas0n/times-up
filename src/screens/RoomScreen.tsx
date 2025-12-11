@@ -4,27 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useGameConnection } from '../hooks/useGameConnection';
-import { ZeroconfService } from '../types/zeroconf';
-import { colors } from '../theme/colors';
+import { RootStackParamList } from '../navigation/types';
+import {colors} from '../theme/colors';
 import Header from '../components/Header';
-
-type RootStackParamList = {
-    Home: undefined;
-    NewGame: undefined;
-    JoinGame: undefined;
-    Room: {
-        roomCode: string;
-        username: string;
-        isHost: boolean;
-        service?: ZeroconfService;
-    };
-    Game: {
-        roomCode: string;
-        username: string;
-        isHost: boolean;
-        players: Player[];
-    };
-};
 
 type RoomScreenProps = NativeStackScreenProps<RootStackParamList, 'Room'>;
 
