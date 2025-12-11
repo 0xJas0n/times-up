@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { generateRoomCode } from '../utils/generateRoomCode';
+import { colors } from '../theme/colors';
 
 type RootStackParamList = {
   Home: undefined;
@@ -73,7 +74,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
                 onChangeText={setUsername}
                 maxLength={20}
                 placeholder="Enter your name"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.darkGray}
               />
             </View>
           </View>
@@ -83,7 +84,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.createButton,
-                pressed && styles.createButtonPressed,
+                pressed && styles.pressedButton,
               ]}
               onPress={handleCreateRoom}
             >
@@ -94,7 +95,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.cancelButton,
-                pressed && styles.cancelButtonPressed,
+                pressed && styles.pressedButton,
               ]}
               onPress={handleCancel}
             >
@@ -110,7 +111,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   titleContainer: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -132,7 +133,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#000000',
+    color: colors.text,
     textAlign: 'center',
     letterSpacing: 1,
   },
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   labelContainer: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.primary,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -155,18 +156,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text,
   },
   input: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: colors.lightGray,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
+    borderColor: colors.mediumGray,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textDark,
   },
   buttonContainer: {
     width: '100%',
@@ -187,21 +188,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   createButton: {
-    backgroundColor: '#2DD881',
-  },
-  createButtonPressed: {
-    backgroundColor: '#25B86D',
-    opacity: 0.8,
+    backgroundColor: colors.success,
   },
   cancelButton: {
-    backgroundColor: '#E74C3C',
+    backgroundColor: colors.error,
   },
-  cancelButtonPressed: {
-    backgroundColor: '#C0392B',
-    opacity: 0.8,
+  pressedButton: {
+    backgroundColor: colors.accent,
+    transform: [{ scale: 0.98 }],
   },
   buttonText: {
-    color: '#000000',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 0.5,

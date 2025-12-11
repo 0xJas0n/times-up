@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Text, StyleSheet, Animated, View } from 'react-native';
 import { GamePlayer } from '../types/challenge';
 import BombIcon from '../assets/bomb-orange.svg';
+import { colors } from '../theme/colors';
 
 interface PlayerRowProps {
   player: GamePlayer;
@@ -55,13 +56,13 @@ const styles = StyleSheet.create({
   playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.lightGray,
     padding: 10,
     height: 58,
     position: 'absolute',
     width: '100%',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.mediumGray,
   },
   firstPlayer: {
     borderTopLeftRadius: 8,
@@ -75,16 +76,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginRight: 10,
+    color: colors.textDark,
   },
   name: {
     fontSize: 18,
     flex: 1,
+    color: colors.textDark,
   },
   bombContainer: {
     marginLeft: 10,
   },
   nextRecipient: {
-    backgroundColor: 'red',
+    backgroundColor: colors.warning,
   },
   eliminatedPlayer: {
     backgroundColor: '#555',

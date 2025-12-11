@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,12 +8,11 @@ import Leaderboard from '../components/Leaderboard';
 import { PatternBackground } from '../components/PatternBackground';
 import { useGameConnection } from "../hooks/useGameConnection";
 import { CHALLENGES, Challenge, getRandomChallengeID } from "../data/challenges";
-import { ChallengeRenderer } from '../components/challenges/ChallengeRenderer';
-import { ChallengeTimer } from '../components/challenges/ChallengeTimer';
 import { ExplosionAnimation } from '../components/ExplosionAnimation';
 import { CountdownView } from '../components/game/CountdownView';
 import { BombView } from '../components/game/BombView';
 import { ChallengeView } from '../components/game/ChallengeView';
+import { colors } from '../theme/colors';
 
 type RootStackParamList = {
   Room: { roomCode: string; username: string; players: Player[] };
@@ -551,7 +550,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -564,7 +563,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   leaveButtonText: {
-    color: 'white',
+    color: colors.text,
     fontSize: 16,
     opacity: 0.8,
   },
@@ -573,17 +572,78 @@ const styles = StyleSheet.create({
   },
   challengeContainer: {
     flex: 2,
-    backgroundColor: 'rgba(30, 31, 59, 0.8)',
+    backgroundColor: colors.secondary,
     borderRadius: 20,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusText: {
+  activeChallenge: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  challengeTitle: {
+    color: '#2DD881',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  instruction: {
     color: 'white',
+    fontSize: 18,
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  tapBtn: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#3B82F6',
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+  },
+  disabledBtn: {
+    backgroundColor: '#475569',
+    shadowOpacity: 0,
+  },
+  tapText: {
+    color: 'white',
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  progress: {
+    color: '#94A3B8',
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  statusText: {
+    color: colors.text,
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  bombText: {
+    fontSize: 80,
+    marginBottom: 20,
+  },
+  bombImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  countdownText: {
+    fontSize: 120,
+    fontWeight: 'bold',
+    color: '#2DD881',
+  },
+  centerBox: {
+    alignItems: 'center',
   },
 });
 

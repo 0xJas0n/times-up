@@ -5,6 +5,7 @@ import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useGameConnection } from '../hooks/useGameConnection';
 import { ZeroconfService } from '../types/zeroconf';
+import { colors } from '../theme/colors';
 
 type RootStackParamList = {
     Home: undefined;
@@ -226,7 +227,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                                 style={({ pressed }) => [
                                     styles.button,
                                     styles.startButton,
-                                    pressed && styles.startButtonPressed,
+                                    pressed && styles.pressedButton,
                                 ]}
                                 onPress={handleStart}
                             >
@@ -244,7 +245,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                             style={({ pressed }) => [
                                 styles.button,
                                 styles.cancelButton,
-                                pressed && styles.cancelButtonPressed,
+                                pressed && styles.pressedButton,
                             ]}
                             onPress={handleCancel}
                         >
@@ -260,7 +261,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   titleContainer: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#000000',
+    color: colors.text,
     textAlign: 'center',
     letterSpacing: 1,
   },
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   playersHeader: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
   playersHeaderText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text,
   },
   playersList: {
     flex: 1,
@@ -314,9 +315,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   playerCard: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: colors.lightGray,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
+    borderColor: colors.mediumGray,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -329,11 +330,11 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textDark,
     flex: 1,
   },
   hostBadge: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 4,
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
   hostBadgeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text,
   },
   emptyState: {
     alignItems: 'center',
@@ -351,7 +352,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#999999',
+    color: colors.darkGray,
     fontStyle: 'italic',
   },
   buttonContainer: {
@@ -373,31 +374,27 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   startButton: {
-    backgroundColor: '#2DD881',
-  },
-  startButtonPressed: {
-    backgroundColor: '#25B86D',
-    opacity: 0.8,
+    backgroundColor: colors.success,
   },
   cancelButton: {
-    backgroundColor: '#E74C3C',
+    backgroundColor: colors.error,
   },
-  cancelButtonPressed: {
-    backgroundColor: '#C0392B',
-    opacity: 0.8,
+  pressedButton: {
+    backgroundColor: colors.accent,
+    transform: [{ scale: 0.98 }],
   },
   waitingButton: {
-    backgroundColor: '#334155',
+    backgroundColor: colors.secondary,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: colors.disabled,
   },
   waitingText: {
-    color: '#94A3B8',
+    color: colors.mediumGray,
     fontSize: 18,
     fontStyle: 'italic',
   },
   buttonText: {
-    color: '#000000',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 0.5,

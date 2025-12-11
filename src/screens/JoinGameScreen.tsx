@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import Zeroconf from 'react-native-zeroconf';
 import { ZeroconfService } from '../types/zeroconf';
+import { colors } from '../theme/colors';
 
 type RootStackParamList = {
   Home: undefined;
@@ -111,7 +112,7 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
                 onChangeText={setUsername}
                 maxLength={20}
                 placeholder="Enter your name"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.darkGray}
               />
             </View>
           </View>
@@ -133,7 +134,7 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.backButton,
-                pressed && styles.backButtonPressed,
+                pressed && styles.pressedButton,
               ]}
               onPress={handleBack}
             >
@@ -149,7 +150,7 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0F172A',
+        backgroundColor: colors.background,
     },
     safeArea: {
         flex: 1,
@@ -162,7 +163,7 @@ const styles = StyleSheet.create({
         paddingVertical: 60,
     },
     titleContainer: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: colors.secondary,
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderRadius: 8,
@@ -171,7 +172,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 48,
         fontWeight: 'bold',
-        color: '#000000',
+        color: colors.text,
         textAlign: 'center',
         letterSpacing: 1,
     },
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     labelContainer: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: colors.secondary,
         alignSelf: 'flex-start',
         paddingHorizontal: 12,
         paddingVertical: 4,
@@ -194,18 +195,18 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#000000',
+        color: colors.text,
     },
     input: {
-        backgroundColor: '#E8E8E8',
+        backgroundColor: colors.lightGray,
         borderWidth: 2,
-        borderColor: '#CCCCCC',
+        borderColor: colors.mediumGray,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 14,
         fontSize: 18,
         fontWeight: '600',
-        color: '#000000',
+        color: colors.textDark,
     },
     gameListContainer: {
         flex: 1,
@@ -214,25 +215,25 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     loadingText: {
-        color: 'white',
+        color: colors.text,
         textAlign: 'center',
         fontSize: 16,
         marginBottom: 10,
     },
     noGamesText: {
-        color: 'white',
+        color: colors.text,
         textAlign: 'center',
         fontSize: 16,
         marginTop: 20,
     },
     gameItem: {
-        backgroundColor: '#2DD881',
+        backgroundColor: colors.primary,
         padding: 20,
         borderRadius: 8,
         marginBottom: 10,
     },
     gameName: {
-        color: '#000000',
+        color: colors.text,
         fontSize: 18,
         fontWeight: 'bold',
     },
@@ -256,14 +257,14 @@ const styles = StyleSheet.create({
         shadowRadius: 3.84,
     },
     backButton: {
-        backgroundColor: '#E74C3C',
+        backgroundColor: colors.error,
     },
-    backButtonPressed: {
-        backgroundColor: '#C0392B',
-        opacity: 0.8,
+    pressedButton: {
+        backgroundColor: colors.accent,
+        transform: [{ scale: 0.98 }],
     },
     buttonText: {
-        color: '#FFFFFF',
+        color: colors.text,
         fontSize: 20,
         fontWeight: '600',
         letterSpacing: 0.5,

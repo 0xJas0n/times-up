@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { colors } from '../theme/colors';
 
 type RootStackParamList = {
   Home: undefined;
@@ -36,7 +37,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.newGameButton,
-                pressed && styles.newGameButtonPressed,
+                pressed && styles.pressedButton,
               ]}
               onPress={handleNewGame}
             >
@@ -47,7 +48,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               style={({ pressed }) => [
                 styles.button,
                 styles.joinGameButton,
-                pressed && styles.joinGameButtonPressed,
+                pressed && styles.pressedButton,
               ]}
               onPress={handleJoinGame}
             >
@@ -63,7 +64,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   titleContainer: {
-    backgroundColor: '#D35400',
+    backgroundColor: colors.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 56,
     fontWeight: 'bold',
-    color: '#000000',
+    color: colors.text,
     textAlign: 'center',
     letterSpacing: 1,
   },
@@ -108,21 +109,17 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   newGameButton: {
-    backgroundColor: '#2DD881',
-  },
-  newGameButtonPressed: {
-    backgroundColor: '#25B86D',
-    opacity: 0.8,
+    backgroundColor: colors.primary,
   },
   joinGameButton: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: colors.secondary,
   },
-  joinGameButtonPressed: {
-    backgroundColor: '#2563EB',
-    opacity: 0.8,
+  pressedButton: {
+    backgroundColor: colors.accent,
+    transform: [{ scale: 0.98 }],
   },
   buttonText: {
-    color: '#000000',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 0.5,

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
+import { colors } from '../theme/colors';
 
 interface PatternBackgroundProps {
   speed?: number;
@@ -10,7 +11,7 @@ interface PatternBackgroundProps {
 
 const BombIcon: React.FC<{ size: number }> = ({ size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <G fill="#d35400" opacity={0.3}>
+    <G fill={colors.primary} opacity={0.3}>
       <Path d="M17.981 2.353a.558.558 0 0 1 1.038 0l.654 1.66c.057.143.17.257.315.314l1.659.654c.47.186.47.852 0 1.038l-1.66.654a.56.56 0 0 0-.314.315l-.654 1.659a.558.558 0 0 1-1.038 0l-.654-1.66a.56.56 0 0 0-.315-.314l-1.659-.654a.558.558 0 0 1 0-1.038l1.66-.654a.56.56 0 0 0 .314-.315z" />
       <Path
         fillRule="evenodd"
@@ -89,7 +90,7 @@ export const PatternBackground: React.FC<PatternBackgroundProps> = ({
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#E67E22',
+    backgroundColor: 'transparent',
     overflow: 'hidden',
   },
   animatedGrid: {
