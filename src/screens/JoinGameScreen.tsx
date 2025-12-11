@@ -86,6 +86,9 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
   const renderItem = ({ item }: { item: ZeroconfService }) => (
     <Pressable style={styles.gameItem} onPress={() => handleJoinRoom(item)}>
       <Text style={styles.gameName}>#{item.name}</Text>
+      <View style={styles.joinBadge}>
+        <Text style={styles.joinBadgeText}>Join</Text>
+      </View>
     </Pressable>
   );
 
@@ -199,10 +202,24 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 8,
         marginBottom: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     gameName: {
         color: colors.text,
         fontSize: 18,
+        fontWeight: 'bold',
+    },
+    joinBadge: {
+        backgroundColor: colors.secondary,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+    },
+    joinBadgeText: {
+        color: colors.text,
+        fontSize: 14,
         fontWeight: 'bold',
     },
     buttonContainer: {
