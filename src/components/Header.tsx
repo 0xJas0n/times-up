@@ -44,12 +44,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 5,
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    right: 20,
-    zIndex: 1,
+    zIndex: 10,
   },
   backButton: {
     opacity: 0.8,

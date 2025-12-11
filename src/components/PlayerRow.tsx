@@ -17,7 +17,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, index, isFirst, isLast, i
 
   useEffect(() => {
     Animated.spring(translateY, {
-      toValue: index * 60,
+      toValue: index * 50,
       damping: 15,
       stiffness: 150,
       useNativeDriver: true,
@@ -57,8 +57,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.lightGray,
-    padding: 10,
-    height: 58,
+    padding: 8,
+    height: 48,
     position: 'absolute',
     width: '100%',
     borderWidth: 1,
@@ -73,13 +73,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
   },
   rank: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginRight: 10,
     color: colors.textDark,
   },
   name: {
-    fontSize: 18,
+    fontSize: 16,
     flex: 1,
     color: colors.textDark,
   },

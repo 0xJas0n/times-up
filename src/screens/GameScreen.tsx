@@ -577,104 +577,104 @@ const GameScreen = ({
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    safeArea: {
-        flex: 1,
-        paddingHorizontal: 20,
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        paddingVertical: 10,
-    },
-    leaveButtonText: {
-        color: colors.text,
-        fontSize: 16,
-        opacity: 0.8,
-    },
-    leaderboardContainer: {
-        flex: 1,
-        marginTop: 60,
-    },
-    challengeContainer: {
-        flex: 2,
-        backgroundColor: colors.secondary,
-        borderRadius: 20,
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    activeChallenge: {
-        width: '100%',
-        alignItems: 'center',
-    },
-    challengeTitle: {
-        color: '#2DD881',
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    instruction: {
-        color: 'white',
-        fontSize: 18,
-        marginBottom: 30,
-        textAlign: 'center',
-    },
-    tapBtn: {
-        width: 180,
-        height: 180,
-        borderRadius: 90,
-        backgroundColor: '#3B82F6',
-        justifyContent: 'center',
-        alignItems: 'center',
-        elevation: 5,
-        shadowColor: '#3B82F6',
-        shadowOpacity: 0.5,
-        shadowRadius: 10,
-    },
-    disabledBtn: {
-        backgroundColor: '#475569',
-        shadowOpacity: 0,
-    },
-    tapText: {
-        color: 'white',
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    progress: {
-        color: '#94A3B8',
-        marginTop: 20,
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    statusText: {
-        color: colors.text,
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    bombText: {
-        fontSize: 80,
-        marginBottom: 20,
-    },
-    bombImage: {
-        width: 120,
-        height: 120,
-        marginBottom: 20,
-    },
-    countdownText: {
-        fontSize: 120,
-        fontWeight: 'bold',
-        color: '#2DD881',
-    },
-    centerBox: {
-        alignItems: 'center',
-    },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  safeArea: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  leaveButtonText: {
+    color: colors.text,
+    fontSize: 16,
+    opacity: 0.8,
+  },
+  leaderboardContainer: {
+    flex: 1,
+    marginTop: 60,
+  },
+  challengeContainer: {
+    flex: 2,
+    backgroundColor: colors.secondary,
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeChallenge: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  challengeTitle: {
+    color: colors.accent,
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  instruction: {
+    color: colors.text,
+    fontSize: 18,
+    marginBottom: 30,
+    textAlign: 'center',
+  },
+  tapBtn: {
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+  },
+  disabledBtn: {
+    backgroundColor: colors.disabled,
+    shadowOpacity: 0,
+  },
+  tapText: {
+    color: colors.text,
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  progress: {
+    color: colors.mediumGray,
+    marginTop: 20,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  statusText: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  bombText: {
+    fontSize: 80,
+    marginBottom: 20,
+  },
+  bombImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  countdownText: {
+    fontSize: 120,
+    fontWeight: 'bold',
+    color: colors.accent,
+  },
+  centerBox: {
+    alignItems: 'center',
+  },
 });
 
 export default GameScreen;

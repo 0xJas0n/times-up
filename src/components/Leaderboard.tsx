@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
 import { GamePlayer } from '../types/challenge';
 import PlayerRow from './PlayerRow';
 
@@ -7,12 +7,19 @@ interface LeaderboardProps {
   players: GamePlayer[];
   eliminatedPlayers?: string[];
 }
+const ROW_HEIGHT = 50;
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ players, eliminatedPlayers = [] }) => {
   const sortedPlayers = [...players].sort((a, b) => a.currentRank - b.currentRank).slice(0, 6);
+  const { height: screenHeight } = useWindowDimensions();
+
+  const containerHeight = Math.min(
+    sortedPlayers.length * ROW_HEIGHT,
+    screenHeight * 0.4
+  );
 
   return (
-    <View style={styles.container}>
+    <View style={[{ height: containerHeight }]}>
       {sortedPlayers.map((player, index) => (
         <PlayerRow
           key={player.id}
@@ -26,11 +33,5 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ players, eliminatedPlayers = 
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    height: 60 * 6, // Height for 6 players
-  },
-});
 
 export default Leaderboard;
