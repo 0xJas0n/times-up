@@ -210,11 +210,9 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                                                 {player.name}
                                             </Text>
                                             {player.isHost && (
-                                                <View style={styles.hostBadge}>
-                                                    <Text style={styles.hostBadgeText}>
-                                                        Host
-                                                    </Text>
-                                                </View>
+                                                <Text style={styles.hostBadgeText}>
+                                                    Host
+                                                </Text>
                                             )}
                                         </View>
                                     </View>
@@ -311,17 +309,12 @@ const styles = StyleSheet.create({
     color: colors.textDark,
     flex: 1,
   },
-  hostBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginLeft: 12,
-  },
   hostBadgeText: {
+    paddingVertical: 4,
+    marginLeft: 12,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.primary,
   },
   emptyState: {
     alignItems: 'center',
