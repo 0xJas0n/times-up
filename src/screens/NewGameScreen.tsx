@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   labelContainer: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 4,

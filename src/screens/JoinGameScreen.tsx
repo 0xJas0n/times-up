@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     gameItem: {
-        backgroundColor: colors.primary,
+        backgroundColor: colors.secondary,
         padding: 20,
         borderRadius: 8,
         marginBottom: 10,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     joinBadge: {
-        backgroundColor: colors.secondary,
+        backgroundColor: colors.primary,
         paddingVertical: 8,
         paddingHorizontal: 16,
         borderRadius: 6,
