@@ -33,6 +33,7 @@ const Header = ({ onLeave, title }: HeaderProps) => {
         <Ionicons name="chevron-back" size={32} color={colors.text} />
       </Pressable>
       {title && <Text style={styles.title}>{title}</Text>}
+      <View style={styles.placeholder} />
     </View>
   );
 };
@@ -52,14 +53,15 @@ const styles = StyleSheet.create({
   },
   backButton: {
     opacity: 0.8,
-    flex: 1,
   },
   title: {
     color: colors.text,
     fontSize: 24,
     fontWeight: 'bold',
     textAlign: 'center',
-    flex: 5,
+  },
+  placeholder: {
+    width: 32, // Same as chevron size
   },
 });
 

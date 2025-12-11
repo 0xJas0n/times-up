@@ -262,7 +262,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 60,
+    paddingTop: 120,
+    paddingBottom: 60,
   },
   playersContainer: {
     flex: 1,
@@ -351,10 +352,10 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   startButton: {
-    backgroundColor: colors.success,
+    backgroundColor: colors.primary,
   },
   startButtonPressed: {
-    backgroundColor: colors.successDark,
+    backgroundColor: colors.primaryDark,
   },
   waitingButton: {
     backgroundColor: colors.secondary,
