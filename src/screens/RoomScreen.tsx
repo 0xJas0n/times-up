@@ -187,7 +187,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                     <View style={styles.playersContainer}>
                         <View style={styles.playersHeader}>
                             <Text style={styles.playersHeaderText}>
-                                Players ({players.length})
+                                {players.length} {players.length === 1 ? 'Player' : 'Players'}
                             </Text>
                         </View>
 
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   playersHeader: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
