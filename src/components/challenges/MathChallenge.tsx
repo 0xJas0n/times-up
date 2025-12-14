@@ -4,7 +4,7 @@ import { Challenge, MathChallenge as MathChallengeType } from '../../data/challe
 
 export interface ChallengeProps {
   challenge: Challenge;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 
@@ -32,9 +32,11 @@ export const MathChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
     if (disabled || selectedAnswer !== null) return;
 
     setSelectedAnswer(answer);
-    // Wait a brief moment to show the selection before completing
+    const isCorrect = answer === mathChallenge.correctAnswer;
+
+    // Answer is locked in - complete after brief feedback regardless of correctness
     setTimeout(() => {
-      onComplete();
+      onComplete(isCorrect);
     }, 300);
   };
 
@@ -75,12 +77,6 @@ export const MathChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
           </Pressable>
         ))}
       </View>
-
-      {selectedAnswer && (
-        <Text style={styles.feedback}>
-          {selectedAnswer === mathChallenge.correctAnswer ? '✓ Correct!' : '✗ Wrong!'}
-        </Text>
-      )}
     </View>
   );
 };
@@ -89,30 +85,30 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
+    gap: 12,
     width: '100%',
   },
   challengeTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#2DD881',
     textAlign: 'center',
   },
   instruction: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'white',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   questionContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 20,
-    paddingHorizontal: 30,
-    borderRadius: 15,
-    marginBottom: 10,
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   question: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
@@ -121,16 +117,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 15,
+    gap: 12,
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   answerBtn: {
     width: '45%',
-    minWidth: 140,
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-    borderRadius: 15,
+    minWidth: 120,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     backgroundColor: '#2DD881',
     justifyContent: 'center',
     alignItems: 'center',
@@ -150,15 +146,9 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   answerText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'center',
-  },
-  feedback: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 10,
   },
 });

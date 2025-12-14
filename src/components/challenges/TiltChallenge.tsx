@@ -5,7 +5,7 @@ import { Accelerometer } from 'expo-sensors';
 
 export interface ChallengeProps {
   challenge: Challenge;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 
@@ -14,6 +14,7 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
   const [tiltData, setTiltData] = useState({ x: 0, y: 0, z: 0 });
   const [progress, setProgress] = useState(0);
   const [isCorrectAngle, setIsCorrectAngle] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
     let subscription: any;
@@ -49,6 +50,8 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
 
   // Track progress when at correct angle
   useEffect(() => {
+    if (isComplete) return; // Don't update progress once complete
+
     let interval: NodeJS.Timeout;
 
     if (isCorrectAngle && !disabled) {
@@ -56,7 +59,6 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
         setProgress((prev) => {
           const newProgress = prev + 100;
           if (newProgress >= tiltChallenge.holdDuration) {
-            onComplete();
             return tiltChallenge.holdDuration;
           }
           return newProgress;
@@ -71,37 +73,30 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
         clearInterval(interval);
       }
     };
-  }, [isCorrectAngle, disabled]);
+  }, [isCorrectAngle, disabled, isComplete]);
+
+  // Check if challenge is complete
+  useEffect(() => {
+    if (progress >= tiltChallenge.holdDuration && !disabled && !isComplete) {
+      setIsComplete(true);
+      onComplete(true);
+    }
+  }, [progress, tiltChallenge.holdDuration, disabled, isComplete]);
 
   const checkCorrectAngle = (data: { x: number; y: number; z: number }): boolean => {
     const threshold = 0.5;
 
     switch (tiltChallenge.targetAngle) {
       case 'left':
-        return data.x < -threshold;
-      case 'right':
         return data.x > threshold;
+      case 'right':
+        return data.x < -threshold;
       case 'forward':
         return data.y < -threshold;
       case 'backward':
         return data.y > threshold;
       default:
         return false;
-    }
-  };
-
-  const getAngleIcon = () => {
-    switch (tiltChallenge.targetAngle) {
-      case 'left':
-        return '←';
-      case 'right':
-        return '→';
-      case 'forward':
-        return '↑';
-      case 'backward':
-        return '↓';
-      default:
-        return '•';
     }
   };
 
@@ -112,29 +107,25 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
       <Text style={styles.challengeTitle}>{tiltChallenge.title}</Text>
       <Text style={styles.instruction}>{tiltChallenge.instruction}</Text>
 
-      <View style={styles.angleIndicator}>
-        <Text style={[
-          styles.angleIcon,
-          isCorrectAngle && styles.angleIconActive
-        ]}>
-          {getAngleIcon()}
-        </Text>
+      {/* Phone icon - stationary */}
+      <View style={styles.phoneContainer}>
+        <View style={styles.phoneIcon}>
+          {/* Phone outline */}
+          <View style={styles.phoneOutline}>
+            {/* Progress fill */}
+            <View style={[
+              styles.phoneFill,
+              {
+                height: `${progressPercentage}%`,
+                backgroundColor: isCorrectAngle ? '#2DD881' : '#666'
+              }
+            ]} />
+          </View>
+        </View>
       </View>
 
-      <View style={styles.progressBarContainer}>
-        <View
-          style={[
-            styles.progressBar,
-            { width: `${progressPercentage}%` }
-          ]}
-        />
-      </View>
-
-      <Text style={styles.status}>
-        {isCorrectAngle ? 'Hold it!' : 'Tilt to the correct angle'}
-      </Text>
-
-      <Text style={styles.debugText}>
+      {/* Simple percentage display */}
+      <Text style={styles.percentageText}>
         {Math.round(progressPercentage)}%
       </Text>
     </View>
@@ -145,59 +136,51 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
+    gap: 15,
     width: '100%',
   },
   challengeTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#2DD881',
     textAlign: 'center',
   },
   instruction: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'white',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
-  angleIndicator: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  phoneContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 15,
   },
-  angleIcon: {
-    fontSize: 80,
-    color: '#666',
+  phoneIcon: {
+    width: 100,
+    height: 160,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
   },
-  angleIconActive: {
-    color: '#2DD881',
-  },
-  progressBarContainer: {
-    width: '80%',
-    height: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 15,
+  phoneOutline: {
+    width: 100,
+    height: 160,
+    borderRadius: 16,
+    borderWidth: 4,
+    borderColor: 'white',
     overflow: 'hidden',
+    justifyContent: 'flex-end',
+    position: 'relative',
   },
-  progressBar: {
-    height: '100%',
-    backgroundColor: '#2DD881',
-    borderRadius: 15,
+  phoneFill: {
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
   },
-  status: {
-    fontSize: 20,
+  percentageText: {
+    fontSize: 28,
     fontWeight: 'bold',
     color: 'white',
-    textAlign: 'center',
-  },
-  debugText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
-    marginTop: 10,
+    marginTop: 5,
   },
 });

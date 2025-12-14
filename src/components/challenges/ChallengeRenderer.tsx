@@ -10,7 +10,7 @@ import { ReactionChallenge } from './ReactionChallenge';
 
 interface ChallengeRendererProps {
   challenge: Challenge | null;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 

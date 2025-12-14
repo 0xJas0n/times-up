@@ -4,7 +4,7 @@ import { Challenge, ReactionChallenge as ReactionChallengeType } from '../../dat
 
 export interface ChallengeProps {
   challenge: Challenge;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 
@@ -34,8 +34,9 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
     if (disabled) return;
 
     if (isWaiting) {
-      // Pressed too early
+      // Pressed too early - give them a huge penalty time so they definitely lose
       setTooEarly(true);
+      onComplete(false, 999999); // Massive penalty time
       return;
     }
 
@@ -45,7 +46,7 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
       setReactionTime(reaction);
 
       setTimeout(() => {
-        onComplete();
+        onComplete(true, reaction); // Pass reaction time as customDeltaTime
       }, 1000);
     }
   };
@@ -59,8 +60,8 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
   const getStatusText = () => {
     if (tooEarly) return 'Too Early!';
     if (reactionTime) return `${reactionTime}ms`;
-    if (showGreen) return 'TAP NOW!';
-    return 'Wait for green...';
+    if (showGreen) return 'Tap!';
+    return 'Wait!';
   };
 
   const getEmoji = () => {
@@ -85,28 +86,8 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
         onPress={handlePress}
         disabled={disabled || tooEarly || !!reactionTime}
       >
-        <Text style={styles.emoji}>{getEmoji()}</Text>
         <Text style={styles.statusText}>{getStatusText()}</Text>
       </Pressable>
-
-      {reactionTime && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultText}>
-            {reactionTime < 200 ? 'Lightning fast!' :
-             reactionTime < 300 ? 'Impressive!' :
-             reactionTime < 400 ? 'Good reflexes!' :
-             'Not bad!'}
-          </Text>
-        </View>
-      )}
-
-      {tooEarly && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.errorText}>
-            Wait for the color to change!
-          </Text>
-        </View>
-      )}
     </View>
   );
 };
@@ -115,24 +96,24 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
+    gap: 12,
     width: '100%',
   },
   challengeTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#2DD881',
     textAlign: 'center',
   },
   instruction: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'white',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   reactionButton: {
-    width: 280,
-    height: 280,
+    width: 200,
+    height: 200,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
@@ -141,32 +122,28 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    marginVertical: 20,
-  },
-  emoji: {
-    fontSize: 80,
-    marginBottom: 20,
+    marginVertical: 10,
   },
   statusText: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'center',
   },
   resultContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
   },
   resultText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#2DD881',
     textAlign: 'center',
   },
   errorText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FF4444',
     textAlign: 'center',

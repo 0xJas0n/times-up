@@ -46,6 +46,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const throttledUpdates = useRef<{ [key: string]: ChallengeProgress }>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const finishedPlayers = useRef<Set<string>>(new Set());
+  const playerResults = useRef<{ [key: string]: { isCorrect: boolean; deltaTime: number } }>({});
   const readyPlayers = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -85,7 +86,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }
 
     if (isHost && lastMessage.type === 'PLAYER_FINISHED') {
-      handlePlayerFinished(lastMessage.name);
+      handlePlayerFinished(lastMessage.name, lastMessage.isCorrect ?? true, lastMessage.deltaTime ?? 0);
     }
   }, [lastMessage]);
 
@@ -120,20 +121,40 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const startNewRound = () => {
     const nextId = getRandomChallengeID();
     finishedPlayers.current.clear();
+    playerResults.current = {};
 
     broadcastGameState('START_ROUND', { id:nextId });
     startClientRound(nextId);
   };
 
-  const handlePlayerFinished = (playerName: string) => {
+  const handlePlayerFinished = (playerName: string, isCorrect: boolean = true, deltaTime: number = 0) => {
     if (finishedPlayers.current.has(playerName)) {
       return;
     }
 
     finishedPlayers.current.add(playerName);
+    playerResults.current[playerName] = {
+      isCorrect,
+      deltaTime,
+    };
 
     if (finishedPlayers.current.size === players.length) {
-      endRound(playerName);
+      // Determine loser based on: 1. Correctness (wrong answer = loser), 2. Speed (slowest = loser)
+      const results = Object.entries(playerResults.current);
+
+      // First, check if anyone got it wrong
+      const wrongAnswers = results.filter(([_, r]) => !r.isCorrect);
+
+      let loserName: string;
+      if (wrongAnswers.length > 0) {
+        // If there are wrong answers, the slowest among wrong loses (longest deltaTime among wrong)
+        loserName = wrongAnswers.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+      } else {
+        // If all correct, the slowest person loses (longest deltaTime)
+        loserName = results.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+      }
+
+      endRound(loserName);
     }
   };
 
@@ -158,6 +179,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       setIsFinished(false);
       setStatusText(challenge.instruction);
       setBombHolder(null);
+      setChallengeStartTime(Date.now()); // Record start time
     } else {
       console.error('[GameScreen] ERROR: No challenge found for ID:', challengeId);
     }
@@ -186,14 +208,19 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }, 3000);
   };
 
-  const handleChallengeComplete = () => {
+  const [challengeStartTime, setChallengeStartTime] = useState<number>(0);
+
+  const handleChallengeComplete = (isCorrect: boolean = true, customDeltaTime?: number) => {
     setIsFinished(true);
     setStatusText('Waiting for others...');
 
-    sendGameAction('FINISHED', { name: username });
+    // Use customDeltaTime if provided (e.g., reaction time), otherwise calculate from start
+    const deltaTime = customDeltaTime ?? (Date.now() - challengeStartTime);
+
+    sendGameAction('FINISHED', { name: username, isCorrect, deltaTime });
 
     if (isHost) {
-      handlePlayerFinished(username);
+      handlePlayerFinished(username, isCorrect, deltaTime);
     }
   };
 

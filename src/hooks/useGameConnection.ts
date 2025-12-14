@@ -44,7 +44,18 @@ export const useGameConnection = () => {
                     formattedMsg = { type: 'COUNTDOWN', count: parseInt(payload.data, 10) };
                     break;
                 case PROTOCOL.PLAYER_FINISHED:
-                    formattedMsg = { type: 'PLAYER_FINISHED', name: payload.data };
+                    try {
+                        const finishedData = JSON.parse(payload.data);
+                        formattedMsg = {
+                            type: 'PLAYER_FINISHED',
+                            name: finishedData.name,
+                            isCorrect: finishedData.isCorrect,
+                            deltaTime: finishedData.deltaTime
+                        };
+                    } catch (e) {
+                        console.error('Failed to parse PLAYER_FINISHED data', e);
+                        formattedMsg = { type: 'PLAYER_FINISHED', name: payload.data };
+                    }
                     break;
                 case PROTOCOL.ROUND_START:
                     const challengeId = parseInt(payload.data, 10);
@@ -100,7 +111,7 @@ export const useGameConnection = () => {
 
     const sendGameAction = async (actionType: string, data: any) => {
         if (actionType === 'FINISHED') {
-            NetworkManager.broadcast(PROTOCOL.PLAYER_FINISHED, data.name);
+            NetworkManager.broadcast(PROTOCOL.PLAYER_FINISHED, JSON.stringify(data));
         }
 
         if (actionType === 'READY') {

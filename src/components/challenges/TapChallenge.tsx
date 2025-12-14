@@ -4,7 +4,7 @@ import { Challenge, TapChallenge as TapChallengeType } from '../../data/challeng
 
 export interface ChallengeProps {
   challenge: Challenge;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 
@@ -19,7 +19,7 @@ export const TapChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete, 
     setCounter(newVal);
 
     if (newVal >= tapChallenge.target) {
-      onComplete();
+      onComplete(true); // Tap challenge is always "correct"
     }
   };
 

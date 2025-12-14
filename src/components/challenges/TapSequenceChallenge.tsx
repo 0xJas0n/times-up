@@ -4,7 +4,7 @@ import { Challenge, TapSequenceChallenge as TapSequenceChallengeType } from '../
 
 export interface ChallengeProps {
   challenge: Challenge;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 
@@ -15,6 +15,7 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
   const [showingSequence, setShowingSequence] = useState(true);
   const [highlightedButton, setHighlightedButton] = useState<number | null>(null);
   const [isWrong, setIsWrong] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
 
   // Generate random sequence on mount
   useEffect(() => {
@@ -68,13 +69,18 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
     // Check if the tap is correct
     if (sequence[newUserSequence.length - 1] !== index) {
       setIsWrong(true);
+      // Wrong answer - complete with false
+      setTimeout(() => {
+        onComplete(false);
+      }, 300);
       return;
     }
 
     // Check if sequence is complete
     if (newUserSequence.length === sequence.length) {
+      setIsCorrect(true);
       setTimeout(() => {
-        onComplete();
+        onComplete(true);
       }, 300);
     }
   };
@@ -103,7 +109,7 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
 
       <View style={styles.progressContainer}>
         <Text style={styles.progress}>
-          {isWrong ? 'Wrong!' : `${userSequence.length} / ${sequence.length}`}
+          {isWrong ? 'Wrong!' : isCorrect ? 'Correct!' : `${userSequence.length} / ${sequence.length}`}
         </Text>
       </View>
 
@@ -122,10 +128,6 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
           </Pressable>
         ))}
       </View>
-
-      {isWrong && (
-        <Text style={styles.feedback}>Try again next time!</Text>
-      )}
     </View>
   );
 };
@@ -134,29 +136,29 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
+    gap: 10,
     width: '100%',
   },
   challengeTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#2DD881',
     textAlign: 'center',
   },
   instruction: {
-    fontSize: 18,
+    fontSize: 16,
     color: 'white',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
   },
   progressContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
   progress: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
@@ -165,14 +167,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 15,
+    gap: 10,
     width: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
   },
   button: {
-    width: 140,
-    height: 140,
-    borderRadius: 20,
+    width: 100,
+    height: 100,
+    borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
@@ -190,14 +192,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    fontSize: 40,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#000',
-  },
-  feedback: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FF6B6B',
-    marginTop: 10,
   },
 });
