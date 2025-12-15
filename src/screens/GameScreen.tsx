@@ -139,27 +139,40 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
         delete playerResults.current[playerName];
         readyPlayers.current.delete(playerName);
 
-        // If we're in a round, check if all remaining players have finished
-        if (currentChallenge && finishedPlayers.current.size === remainingPlayers.length) {
-          // All remaining players finished, determine loser
-          const results = Object.entries(playerResults.current);
-          if (results.length > 0) {
-            const wrongAnswers = results.filter(([_, r]) => !r.isCorrect);
-            let loserName: string;
+        // Check how many active (non-eliminated) players remain
+        const activePlayers = remainingPlayers.filter(p => !eliminatedPlayers.includes(p.name));
 
-            if (wrongAnswers.length > 0) {
-              loserName = wrongAnswers.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
-            } else {
-              loserName = results.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+        if (activePlayers.length === 1) {
+          // Only one active player left - they win!
+          setWinner(activePlayers[0].name);
+          setStatusText(`${activePlayers[0].name} WINS!`);
+          // Stop any active challenge timer
+          stopChallengeTimer();
+          setCurrentChallenge(null);
+          // TODO: Navigate to winner screen
+        } else {
+          // If we're in a round, check if all remaining active players have finished
+          if (currentChallenge && finishedPlayers.current.size === activePlayers.length) {
+            // All remaining players finished, determine loser
+            const results = Object.entries(playerResults.current);
+            if (results.length > 0) {
+              const wrongAnswers = results.filter(([_, r]) => !r.isCorrect);
+              let loserName: string;
+
+              if (wrongAnswers.length > 0) {
+                loserName = wrongAnswers.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+              } else {
+                loserName = results.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+              }
+
+              endRound(loserName);
             }
-
-            endRound(loserName);
           }
-        }
 
-        // If waiting for players to be ready, check if all remaining players are ready
-        if (!currentChallenge && !countdownNumber && readyPlayers.current.size === remainingPlayers.length) {
-          checkAllPlayersReady();
+          // If waiting for players to be ready, check if all remaining active players are ready
+          if (!currentChallenge && !countdownNumber && readyPlayers.current.size === activePlayers.length) {
+            checkAllPlayersReady();
+          }
         }
       }
 
