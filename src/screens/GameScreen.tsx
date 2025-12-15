@@ -11,6 +11,7 @@ import { debounce } from 'lodash';
 import { useGameConnection } from "../hooks/useGameConnection";
 import { CHALLENGES, Challenge, getRandomChallengeID } from "../data/challenges";
 import { ChallengeRenderer } from '../components/challenges/ChallengeRenderer';
+import { ChallengeTimer } from '../components/challenges/ChallengeTimer';
 
 type RootStackParamList = {
   Room: { roomCode: string; username: string; players: Player[] };
@@ -48,6 +49,8 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const finishedPlayers = useRef<Set<string>>(new Set());
   const playerResults = useRef<{ [key: string]: { isCorrect: boolean; deltaTime: number } }>({});
   const readyPlayers = useRef<Set<string>>(new Set());
+  const challengeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isFinishedRef = useRef<boolean>(false);
 
   useEffect(() => {
     // Send READY signal when GameScreen mounts
@@ -89,6 +92,15 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       handlePlayerFinished(lastMessage.name, lastMessage.isCorrect ?? true, lastMessage.deltaTime ?? 0);
     }
   }, [lastMessage]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (challengeTimeoutRef.current) {
+        clearTimeout(challengeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handlePlayerReady = (playerName: string) => {
     readyPlayers.current.add(playerName);
@@ -170,6 +182,22 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }, 3000);
   }
 
+  const startChallengeTimer = () => {
+    // Set timeout to auto-finish after 15 seconds
+    challengeTimeoutRef.current = setTimeout(() => {
+      if (!isFinishedRef.current) {
+        handleChallengeComplete(false);
+      }
+    }, 15000);
+  };
+
+  const stopChallengeTimer = () => {
+    if (challengeTimeoutRef.current) {
+      clearTimeout(challengeTimeoutRef.current);
+      challengeTimeoutRef.current = null;
+    }
+  };
+
   const startClientRound = (challengeId: number) => {
     const challenge = CHALLENGES[challengeId];
 
@@ -177,15 +205,18 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       setCountdownNumber(null); // Clear countdown
       setCurrentChallenge(challenge);
       setIsFinished(false);
+      isFinishedRef.current = false; // Reset ref
       setStatusText(challenge.instruction);
       setBombHolder(null);
       setChallengeStartTime(Date.now()); // Record start time
+      startChallengeTimer(); // Start 15-second timer
     } else {
       console.error('[GameScreen] ERROR: No challenge found for ID:', challengeId);
     }
   };
 
   const endClientRound = (loser: string) => {
+    stopChallengeTimer(); // Stop timer when round ends
     setCurrentChallenge(null);
     setBombHolder(loser);
     setStatusText(`${loser} got the BOMB!`);
@@ -211,7 +242,9 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const [challengeStartTime, setChallengeStartTime] = useState<number>(0);
 
   const handleChallengeComplete = (isCorrect: boolean = true, customDeltaTime?: number) => {
+    stopChallengeTimer(); // Stop timer when challenge completes
     setIsFinished(true);
+    isFinishedRef.current = true; // Update ref
     setStatusText('Waiting for others...');
 
     // Use customDeltaTime if provided (e.g., reaction time), otherwise calculate from start
@@ -318,6 +351,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
                   onComplete={handleChallengeComplete}
                   disabled={isFinished}
                 />
+                <ChallengeTimer />
               </View>
           ) : (
               <Text style={styles.statusText}>{statusText}</Text>
@@ -363,6 +397,8 @@ const styles = StyleSheet.create({
   activeChallenge: {
     width: '100%',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
   },
   challengeTitle: {
     color: '#2DD881',
