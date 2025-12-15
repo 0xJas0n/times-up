@@ -14,6 +14,7 @@ export const PROTOCOL = {
     PLAYER_FINISHED: 'PLAYER_FINISHED',   // Client -> Host: player name who finished
     ROUND_START: 'ROUND_START',           // Host -> All: round ID
     ROUND_OVER: 'ROUND_OVER',             // Host -> All: loser name
+    PLAYER_ELIMINATED: 'PLAYER_ELIMINATED', // Host -> All: eliminated player name
     HOST_CANCEL: 'HOST_CANCEL',           // Host -> All: host cancelled
 };
 

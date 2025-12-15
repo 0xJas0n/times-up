@@ -43,6 +43,10 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const [bombHolder, setBombHolder] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const [countdownNumber, setCountdownNumber] = useState<number | null>(null);
+  const [eliminatedPlayers, setEliminatedPlayers] = useState<string[]>([]);
+  const [challengesUntilExplosion, setChallengesUntilExplosion] = useState<number>(0);
+  const [challengesCompleted, setChallengesCompleted] = useState<number>(0);
+  const [winner, setWinner] = useState<string | null>(null);
 
   const throttledUpdates = useRef<{ [key: string]: ChallengeProgress }>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,6 +63,12 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     if (isHost) {
       // Host marks themselves as ready
       readyPlayers.current.add(username);
+
+      // Generate initial random explosion number (3-7 challenges)
+      const randomExplosion = Math.floor(Math.random() * 5) + 3;
+      setChallengesUntilExplosion(randomExplosion);
+      console.log(`[GameScreen] Bomb will explode after ${randomExplosion} challenges`);
+
       checkAllPlayersReady();
     }
   }, []);
@@ -69,7 +79,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }
 
     // Only process game-specific messages in GameScreen
-    const gameMessages = ['ROUND_START', 'ROUND_OVER', 'COUNTDOWN', 'PLAYER_READY', 'PLAYER_FINISHED'];
+    const gameMessages = ['ROUND_START', 'ROUND_OVER', 'COUNTDOWN', 'PLAYER_READY', 'PLAYER_FINISHED', 'PLAYER_DISCONNECT', 'PLAYER_ELIMINATED'];
     if (!gameMessages.includes(lastMessage.type)) {
       return;
     }
@@ -82,6 +92,12 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }
     else if (lastMessage.type === 'COUNTDOWN') {
       setCountdownNumber(lastMessage.count);
+    }
+    else if (lastMessage.type === 'PLAYER_DISCONNECT') {
+      handlePlayerDisconnect(lastMessage.name);
+    }
+    else if (lastMessage.type === 'PLAYER_ELIMINATED') {
+      setEliminatedPlayers(prev => [...prev, lastMessage.name]);
     }
 
     if (isHost && lastMessage.type === 'PLAYER_READY') {
@@ -102,6 +118,55 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     };
   }, []);
 
+  const handlePlayerDisconnect = (playerName: string) => {
+    console.log(`[GameScreen] Player disconnected: ${playerName}`);
+
+    // Show disconnect notification
+    const previousStatus = statusText;
+    setStatusText(`${playerName} left the game`);
+    setTimeout(() => {
+      // Restore status if it hasn't changed
+      setStatusText(prev => prev === `${playerName} left the game` ? previousStatus : prev);
+    }, 2000);
+
+    // Remove player from the game
+    setPlayers(prev => {
+      const remainingPlayers = prev.filter(p => p.name !== playerName);
+
+      if (isHost) {
+        // Clean up all host tracking for this player
+        finishedPlayers.current.delete(playerName);
+        delete playerResults.current[playerName];
+        readyPlayers.current.delete(playerName);
+
+        // If we're in a round, check if all remaining players have finished
+        if (currentChallenge && finishedPlayers.current.size === remainingPlayers.length) {
+          // All remaining players finished, determine loser
+          const results = Object.entries(playerResults.current);
+          if (results.length > 0) {
+            const wrongAnswers = results.filter(([_, r]) => !r.isCorrect);
+            let loserName: string;
+
+            if (wrongAnswers.length > 0) {
+              loserName = wrongAnswers.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+            } else {
+              loserName = results.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+            }
+
+            endRound(loserName);
+          }
+        }
+
+        // If waiting for players to be ready, check if all remaining players are ready
+        if (!currentChallenge && !countdownNumber && readyPlayers.current.size === remainingPlayers.length) {
+          checkAllPlayersReady();
+        }
+      }
+
+      return remainingPlayers;
+    });
+  };
+
   const handlePlayerReady = (playerName: string) => {
     readyPlayers.current.add(playerName);
     checkAllPlayersReady();
@@ -110,7 +175,9 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const isCountingDown = useRef(false);
 
   const checkAllPlayersReady = () => {
-    if (readyPlayers.current.size === players.length && !isCountingDown.current) {
+    // Only count non-eliminated players
+    const activePlayers = players.filter(p => !eliminatedPlayers.includes(p.name));
+    if (readyPlayers.current.size === activePlayers.length && !isCountingDown.current) {
       isCountingDown.current = true; // Prevent duplicate countdowns
       readyPlayers.current.clear(); // Clear for next round
       startCountdown();
@@ -150,7 +217,9 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       deltaTime,
     };
 
-    if (finishedPlayers.current.size === players.length) {
+    // Only count non-eliminated players
+    const activePlayers = players.filter(p => !eliminatedPlayers.includes(p.name));
+    if (finishedPlayers.current.size === activePlayers.length) {
       // Determine loser based on: 1. Correctness (wrong answer = loser), 2. Speed (slowest = loser)
       const results = Object.entries(playerResults.current);
 
@@ -174,12 +243,56 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     broadcastGameState('ROUND_OVER', { loser: loserName });
     endClientRound(loserName);
 
-    // Wait for players to send READY again for next round
-    readyPlayers.current.clear();
-    setTimeout(() => {
-      // Prompt players to get ready for next round
-      setStatusText('Get ready for next round...');
-    }, 3000);
+    // Increment challenges completed
+    const newCount = challengesCompleted + 1;
+    setChallengesCompleted(newCount);
+
+    // Check if bomb should explode
+    if (newCount >= challengesUntilExplosion) {
+      // Bomb explodes! Eliminate the player with the bomb
+      setTimeout(() => {
+        eliminatePlayer(loserName);
+      }, 3500); // After bomb animation
+    } else {
+      // Wait for players to send READY again for next round
+      readyPlayers.current.clear();
+      setTimeout(() => {
+        // Prompt players to get ready for next round
+        setStatusText('Get ready for next round...');
+      }, 3000);
+    }
+  }
+
+  const eliminatePlayer = (playerName: string) => {
+    console.log(`[GameScreen] Eliminating player: ${playerName}`);
+
+    // Broadcast elimination to all clients
+    broadcastGameState('PLAYER_ELIMINATED', { name: playerName });
+
+    // Add to eliminated list
+    setEliminatedPlayers(prev => [...prev, playerName]);
+
+    // Check for winner
+    const activePlayers = players.filter(p => !eliminatedPlayers.includes(p.name) && p.name !== playerName);
+
+    if (activePlayers.length === 1) {
+      // We have a winner!
+      setWinner(activePlayers[0].name);
+      setStatusText(`${activePlayers[0].name} WINS!`);
+      // TODO: Navigate to winner screen or show celebration
+    } else {
+      // Generate new explosion number
+      const newExplosion = Math.floor(Math.random() * 5) + 3;
+      setChallengesUntilExplosion(newExplosion);
+      setChallengesCompleted(0);
+      console.log(`[GameScreen] New bomb will explode after ${newExplosion} challenges`);
+
+      // Continue game
+      readyPlayers.current.clear();
+      setTimeout(() => {
+        setStatusText('Get ready for next round...');
+      }, 3000);
+    }
   }
 
   const startChallengeTimer = () => {
@@ -204,12 +317,23 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     if (challenge) {
       setCountdownNumber(null); // Clear countdown
       setCurrentChallenge(challenge);
-      setIsFinished(false);
-      isFinishedRef.current = false; // Reset ref
-      setStatusText(challenge.instruction);
+
+      // Check if current player is eliminated
+      const isEliminated = eliminatedPlayers.includes(username);
+
+      if (isEliminated) {
+        setIsFinished(true); // Spectator mode - can't interact
+        isFinishedRef.current = true;
+        setStatusText('You are eliminated - Spectating...');
+      } else {
+        setIsFinished(false);
+        isFinishedRef.current = false; // Reset ref
+        setStatusText(challenge.instruction);
+        setChallengeStartTime(Date.now()); // Record start time
+        startChallengeTimer(); // Start 15-second timer
+      }
+
       setBombHolder(null);
-      setChallengeStartTime(Date.now()); // Record start time
-      startChallengeTimer(); // Start 15-second timer
     } else {
       console.error('[GameScreen] ERROR: No challenge found for ID:', challengeId);
     }
@@ -330,7 +454,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 
         {/* Leaderboard Section */}
         <View style={styles.leaderboardContainer}>
-          <Leaderboard players={players} />
+          <Leaderboard players={players} eliminatedPlayers={eliminatedPlayers} />
         </View>
 
         {/* Game Interaction Section */}

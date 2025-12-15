@@ -64,6 +64,9 @@ export const useGameConnection = () => {
                 case PROTOCOL.ROUND_OVER:
                     formattedMsg = { type: 'ROUND_OVER', loser: payload.data };
                     break;
+                case PROTOCOL.PLAYER_ELIMINATED:
+                    formattedMsg = { type: 'PLAYER_ELIMINATED', name: payload.data };
+                    break;
                 case PROTOCOL.HOST_CANCEL:
                     formattedMsg = { type: 'HOST_CANCEL' };
                     break;
@@ -106,6 +109,10 @@ export const useGameConnection = () => {
 
         if (state === 'ROUND_OVER') {
             NetworkManager.broadcast(PROTOCOL.ROUND_OVER, data.loser);
+        }
+
+        if (state === 'PLAYER_ELIMINATED') {
+            NetworkManager.broadcast(PROTOCOL.PLAYER_ELIMINATED, data.name);
         }
     };
 

@@ -11,9 +11,10 @@ interface PlayerRowProps {
   index: number;
   isFirst: boolean;
   isLast: boolean;
+  isEliminated?: boolean;
 }
 
-const PlayerRow: React.FC<PlayerRowProps> = ({ player, index, isFirst, isLast }) => {
+const PlayerRow: React.FC<PlayerRowProps> = ({ player, index, isFirst, isLast, isEliminated = false }) => {
   const translateY = useRef(new Animated.Value(index * 60)).current;
 
   useEffect(() => {
@@ -37,11 +38,14 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, index, isFirst, isLast })
         player.isNextRecipient && styles.nextRecipient,
         isFirst && styles.firstPlayer,
         isLast && styles.lastPlayer,
+        isEliminated && styles.eliminatedPlayer,
       ]}
     >
-      <Text style={styles.rank}>{player.currentRank}</Text>
-      <Text style={styles.name}>{player.name}</Text>
-      {player.hasBomb && (
+      <Text style={[styles.rank, isEliminated && styles.eliminatedText]}>{player.currentRank}</Text>
+      <Text style={[styles.name, isEliminated && styles.eliminatedText]}>
+        {player.name} {isEliminated && '(ELIMINATED)'}
+      </Text>
+      {player.hasBomb && !isEliminated && (
         <View style={styles.bombContainer}>
           <SvgXml xml={BOMB_SVG} width={24} height={24} />
         </View>
@@ -84,6 +88,14 @@ const styles = StyleSheet.create({
   },
   nextRecipient: {
     backgroundColor: 'red',
+  },
+  eliminatedPlayer: {
+    backgroundColor: '#555',
+    opacity: 0.7,
+  },
+  eliminatedText: {
+    color: '#999',
+    textDecorationLine: 'line-through',
   },
 });
 
