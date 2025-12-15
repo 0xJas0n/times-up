@@ -125,8 +125,8 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
       </View>
 
       {/* Simple percentage display */}
-      <Text style={styles.percentageText}>
-        {Math.round(progressPercentage)}%
+      <Text style={[styles.percentageText, isComplete && styles.completeText]}>
+        {isComplete ? 'Complete! ✓' : `${Math.round(progressPercentage)}%`}
       </Text>
     </View>
   );
@@ -182,5 +182,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginTop: 5,
+  },
+  completeText: {
+    color: '#2DD881',
+    fontSize: 32,
   },
 });
