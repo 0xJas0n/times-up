@@ -40,8 +40,9 @@ export const useGameConnection = () => {
                 case PROTOCOL.PLAYER_READY:
                     formattedMsg = { type: 'PLAYER_READY', name: payload.data };
                     break;
-                case PROTOCOL.COUNTDOWN:
-                    formattedMsg = { type: 'COUNTDOWN', count: parseInt(payload.data, 10) };
+                case PROTOCOL.ROUND_START:
+                    const challengeId = parseInt(payload.data, 10);
+                    formattedMsg = { type: 'ROUND_START', id: challengeId };
                     break;
                 case PROTOCOL.PLAYER_FINISHED:
                     try {
@@ -57,15 +58,14 @@ export const useGameConnection = () => {
                         formattedMsg = { type: 'PLAYER_FINISHED', name: payload.data };
                     }
                     break;
-                case PROTOCOL.ROUND_START:
-                    const challengeId = parseInt(payload.data, 10);
-                    formattedMsg = { type: 'ROUND_START', id: challengeId };
-                    break;
                 case PROTOCOL.ROUND_OVER:
                     formattedMsg = { type: 'ROUND_OVER', loser: payload.data };
                     break;
                 case PROTOCOL.PLAYER_ELIMINATED:
                     formattedMsg = { type: 'PLAYER_ELIMINATED', name: payload.data };
+                    break;
+                case PROTOCOL.GAME_WINNER:
+                    formattedMsg = { type: 'GAME_WINNER', name: payload.data };
                     break;
                 case PROTOCOL.HOST_CANCEL:
                     formattedMsg = { type: 'HOST_CANCEL' };
@@ -99,10 +99,6 @@ export const useGameConnection = () => {
             NetworkManager.broadcast(PROTOCOL.GAME_START, '');
         }
 
-        if (state === 'COUNTDOWN') {
-            NetworkManager.broadcast(PROTOCOL.COUNTDOWN, data.count.toString());
-        }
-
         if (state === 'START_ROUND') {
             NetworkManager.broadcast(PROTOCOL.ROUND_START, data.id.toString());
         }
@@ -113,6 +109,10 @@ export const useGameConnection = () => {
 
         if (state === 'PLAYER_ELIMINATED') {
             NetworkManager.broadcast(PROTOCOL.PLAYER_ELIMINATED, data.name);
+        }
+
+        if (state === 'GAME_WINNER') {
+            NetworkManager.broadcast(PROTOCOL.GAME_WINNER, data.name);
         }
     };
 

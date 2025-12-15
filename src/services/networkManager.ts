@@ -9,12 +9,12 @@ export const PROTOCOL = {
     PLAYER_LIST: 'PLAYER_LIST',           // Host -> All: JSON array of players
     PLAYER_DISCONNECT: 'PLAYER_DISCONNECT', // Internal: player disconnected
     GAME_START: 'GAME_START',             // Host -> All: game starting
-    PLAYER_READY: 'PLAYER_READY',         // Client -> Host: player ready in GameScreen
-    COUNTDOWN: 'COUNTDOWN',               // Host -> All: countdown number (3, 2, 1)
+    PLAYER_READY: 'PLAYER_READY',         // Client -> Host: player ready after animations complete
+    ROUND_START: 'ROUND_START',           // Host -> All: round ID - clients countdown then start
     PLAYER_FINISHED: 'PLAYER_FINISHED',   // Client -> Host: player name who finished
-    ROUND_START: 'ROUND_START',           // Host -> All: round ID
     ROUND_OVER: 'ROUND_OVER',             // Host -> All: loser name
     PLAYER_ELIMINATED: 'PLAYER_ELIMINATED', // Host -> All: eliminated player name
+    GAME_WINNER: 'GAME_WINNER',           // Host -> All: winner name
     HOST_CANCEL: 'HOST_CANCEL',           // Host -> All: host cancelled
 };
 
