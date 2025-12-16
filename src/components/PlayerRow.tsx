@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { Text, StyleSheet, Animated, View } from 'react-native';
 import { GamePlayer } from '../types/challenge';
 import BombIcon from '../assets/bomb-orange.svg';
+import { colors } from '../theme/colors';
 
 interface PlayerRowProps {
   player: GamePlayer;
@@ -16,7 +17,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, index, isFirst, isLast, i
 
   useEffect(() => {
     Animated.spring(translateY, {
-      toValue: index * 60,
+      toValue: index * 50,
       damping: 15,
       stiffness: 150,
       useNativeDriver: true,
@@ -55,13 +56,13 @@ const styles = StyleSheet.create({
   playerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 10,
-    height: 58,
+    backgroundColor: colors.lightGray,
+    padding: 8,
+    height: 48,
     position: 'absolute',
     width: '100%',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.mediumGray,
   },
   firstPlayer: {
     borderTopLeftRadius: 8,
@@ -72,19 +73,21 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 8,
   },
   rank: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginRight: 10,
+    color: colors.textDark,
   },
   name: {
-    fontSize: 18,
+    fontSize: 16,
     flex: 1,
+    color: colors.textDark,
   },
   bombContainer: {
     marginLeft: 10,
   },
   nextRecipient: {
-    backgroundColor: 'red',
+    backgroundColor: colors.warning,
   },
   eliminatedPlayer: {
     backgroundColor: '#555',

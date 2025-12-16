@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { generateRoomCode } from '../utils/generateRoomCode';
+import { colors } from '../theme/colors';
+import Header from '../components/Header';
 
 type RootStackParamList = {
   Home: undefined;
@@ -35,19 +37,12 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
     });
   };
 
-  const handleCancel = () => {
-    navigation.goBack();
-  };
-
   return (
     <View style={styles.container}>
       <PatternBackground speed={10} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
+        <Header title="New Game" />
         <View style={styles.content}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>New Game</Text>
-          </View>
-
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <View style={styles.labelContainer}>
@@ -73,7 +68,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
                 onChangeText={setUsername}
                 maxLength={20}
                 placeholder="Enter your name"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.darkGray}
               />
             </View>
           </View>
@@ -89,17 +84,6 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
             >
               <Text style={styles.buttonText}>Create Room</Text>
             </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.cancelButton,
-                pressed && styles.cancelButtonPressed,
-              ]}
-              onPress={handleCancel}
-            >
-              <Text style={styles.buttonText}>Cancel</Text>
-            </Pressable>
           </View>
         </View>
       </SafeAreaView>
@@ -110,7 +94,7 @@ export default function NewGameScreen({ navigation }: NewGameScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -120,21 +104,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 60,
-  },
-  titleContainer: {
-    backgroundColor: '#2DD881',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
-    letterSpacing: 1,
+    paddingTop: 120,
+    paddingBottom: 60,
   },
   formContainer: {
     width: '100%',
@@ -145,7 +116,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   labelContainer: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.secondary,
     alignSelf: 'flex-start',
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -155,18 +126,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text,
   },
   input: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: colors.lightGray,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
+    borderColor: colors.mediumGray,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textDark,
   },
   buttonContainer: {
     width: '100%',
@@ -187,21 +158,13 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   createButton: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.primary,
   },
   createButtonPressed: {
-    backgroundColor: '#25B86D',
-    opacity: 0.8,
-  },
-  cancelButton: {
-    backgroundColor: '#E74C3C',
-  },
-  cancelButtonPressed: {
-    backgroundColor: '#C0392B',
-    opacity: 0.8,
+    backgroundColor: colors.primaryDark,
   },
   buttonText: {
-    color: '#000000',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 0.5,

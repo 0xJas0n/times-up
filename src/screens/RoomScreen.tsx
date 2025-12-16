@@ -4,25 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useGameConnection } from '../hooks/useGameConnection';
-import { ZeroconfService } from '../types/zeroconf';
-
-type RootStackParamList = {
-    Home: undefined;
-    NewGame: undefined;
-    JoinGame: undefined;
-    Room: {
-        roomCode: string;
-        username: string;
-        isHost: boolean;
-        service?: ZeroconfService;
-    };
-    Game: {
-        roomCode: string;
-        username: string;
-        isHost: boolean;
-        players: Player[];
-    };
-};
+import { RootStackParamList } from '../navigation/types';
+import {colors} from '../theme/colors';
+import Header from '../components/Header';
 
 type RoomScreenProps = NativeStackScreenProps<RootStackParamList, 'Room'>;
 
@@ -168,6 +152,10 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     };
 
     const handleCancel = async () => {
+        if (isHost) {
+            broadcastGameState('HOST_CANCEL');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
         await disconnect();
         navigation.goBack();
     };
@@ -176,15 +164,12 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
         <View style={styles.container}>
             <PatternBackground speed={10} tileSize={42} gap={42} />
             <SafeAreaView style={styles.safeArea}>
+                <Header onLeave={handleCancel} title={`Room #${roomCode}`} />
                 <View style={styles.content}>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>Room #{roomCode}</Text>
-                    </View>
-
                     <View style={styles.playersContainer}>
                         <View style={styles.playersHeader}>
                             <Text style={styles.playersHeaderText}>
-                                Players ({players.length})
+                                {players.length} {players.length === 1 ? 'Player' : 'Players'}
                             </Text>
                         </View>
 
@@ -207,11 +192,9 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                                                 {player.name}
                                             </Text>
                                             {player.isHost && (
-                                                <View style={styles.hostBadge}>
-                                                    <Text style={styles.hostBadgeText}>
-                                                        Host
-                                                    </Text>
-                                                </View>
+                                                <Text style={styles.hostBadgeText}>
+                                                    Host
+                                                </Text>
                                             )}
                                         </View>
                                     </View>
@@ -239,17 +222,6 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                                 </Text>
                             </View>
                         )}
-
-                        <Pressable
-                            style={({ pressed }) => [
-                                styles.button,
-                                styles.cancelButton,
-                                pressed && styles.cancelButtonPressed,
-                            ]}
-                            onPress={handleCancel}
-                        >
-                            <Text style={styles.buttonText}>Cancel</Text>
-                        </Pressable>
                     </View>
                 </View>
             </SafeAreaView>
@@ -260,7 +232,7 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -268,23 +240,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 60,
-  },
-  titleContainer: {
-    backgroundColor: '#2DD881',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#000000',
-    textAlign: 'center',
-    letterSpacing: 1,
+    paddingTop: 120,
+    paddingBottom: 60,
   },
   playersContainer: {
     flex: 1,
@@ -293,7 +252,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   playersHeader: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.secondary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
@@ -303,7 +262,7 @@ const styles = StyleSheet.create({
   playersHeaderText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.text,
   },
   playersList: {
     flex: 1,
@@ -314,9 +273,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   playerCard: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: colors.lightGray,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
+    borderColor: colors.mediumGray,
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -329,20 +288,15 @@ const styles = StyleSheet.create({
   playerName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.textDark,
     flex: 1,
   },
-  hostBadge: {
-    backgroundColor: '#2DD881',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginLeft: 12,
-  },
   hostBadgeText: {
+    paddingVertical: 4,
+    marginLeft: 12,
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: colors.primary,
   },
   emptyState: {
     alignItems: 'center',
@@ -351,7 +305,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#999999',
+    color: colors.darkGray,
     fontStyle: 'italic',
   },
   buttonContainer: {
@@ -373,31 +327,23 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   startButton: {
-    backgroundColor: '#2DD881',
+    backgroundColor: colors.primary,
   },
   startButtonPressed: {
-    backgroundColor: '#25B86D',
-    opacity: 0.8,
-  },
-  cancelButton: {
-    backgroundColor: '#E74C3C',
-  },
-  cancelButtonPressed: {
-    backgroundColor: '#C0392B',
-    opacity: 0.8,
+    backgroundColor: colors.primaryDark,
   },
   waitingButton: {
-    backgroundColor: '#334155',
+    backgroundColor: colors.secondary,
     borderWidth: 1,
-    borderColor: '#475569',
+    borderColor: colors.disabled,
   },
   waitingText: {
-    color: '#94A3B8',
+    color: colors.mediumGray,
     fontSize: 18,
     fontStyle: 'italic',
   },
   buttonText: {
-    color: '#000000',
+    color: colors.text,
     fontSize: 20,
     fontWeight: '600',
     letterSpacing: 0.5,

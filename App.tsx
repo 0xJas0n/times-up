@@ -7,17 +7,7 @@ import JoinGameScreen from './src/screens/JoinGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
 import GameScreen from './src/screens/GameScreen';
 import WinnerScreen from './src/screens/WinnerScreen';
-import { Player } from './src/screens/RoomScreen';
-import { ZeroconfService } from 'react-native-zeroconf';
-
-type RootStackParamList = {
-  Home: undefined;
-  NewGame: undefined;
-  JoinGame: undefined;
-  Room: { roomCode: string; username: string; isHost: boolean, service?: ZeroconfService };
-  Game: { roomCode: string; username: string; isHost: boolean; players: Player[] };
-  Winner: { winnerName: string };
-};
+import { RootStackParamList } from './src/navigation/types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 

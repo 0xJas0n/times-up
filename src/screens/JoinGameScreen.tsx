@@ -6,6 +6,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import Zeroconf from 'react-native-zeroconf';
 import { ZeroconfService } from '../types/zeroconf';
+import { colors } from '../theme/colors';
+import Header from '../components/Header';
 
 type RootStackParamList = {
   Home: undefined;
@@ -81,13 +83,12 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
     });
   };
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
-
   const renderItem = ({ item }: { item: ZeroconfService }) => (
     <Pressable style={styles.gameItem} onPress={() => handleJoinRoom(item)}>
       <Text style={styles.gameName}>#{item.name}</Text>
+      <View style={styles.joinBadge}>
+        <Text style={styles.joinBadgeText}>Join</Text>
+      </View>
     </Pressable>
   );
 
@@ -95,11 +96,8 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
     <View style={styles.container}>
       <PatternBackground speed={10} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
+        <Header title="Join Game" />
         <View style={styles.content}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>Join Game</Text>
-          </View>
-
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <View style={styles.labelContainer}>
@@ -111,7 +109,7 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
                 onChangeText={setUsername}
                 maxLength={20}
                 placeholder="Enter your name"
-                placeholderTextColor="#999"
+                placeholderTextColor={colors.darkGray}
               />
             </View>
           </View>
@@ -127,19 +125,6 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
               )}
             />
           </View>
-
-          <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-              onPress={handleBack}
-            >
-              <Text style={styles.buttonText}>Back</Text>
-            </Pressable>
-          </View>
         </View>
       </SafeAreaView>
     </View>
@@ -149,7 +134,7 @@ export default function JoinGameScreen({ navigation }: JoinGameScreenProps) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#0F172A',
+        backgroundColor: colors.background,
     },
     safeArea: {
         flex: 1,
@@ -157,23 +142,10 @@ const styles = StyleSheet.create({
     content: {
         flex: 1,
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 60,
-    },
-    titleContainer: {
-        backgroundColor: '#3B82F6',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
-        borderRadius: 8,
-        marginBottom: 20,
-    },
-    title: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        color: '#000000',
-        textAlign: 'center',
-        letterSpacing: 1,
+        paddingTop: 120,
+        paddingBottom: 60,
     },
     formContainer: {
         width: '100%',
@@ -184,7 +156,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     labelContainer: {
-        backgroundColor: '#3B82F6',
+        backgroundColor: colors.secondary,
         alignSelf: 'flex-start',
         paddingHorizontal: 12,
         paddingVertical: 4,
@@ -194,18 +166,18 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#000000',
+        color: colors.text,
     },
     input: {
-        backgroundColor: '#E8E8E8',
+        backgroundColor: colors.lightGray,
         borderWidth: 2,
-        borderColor: '#CCCCCC',
+        borderColor: colors.mediumGray,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 14,
         fontSize: 18,
         fontWeight: '600',
-        color: '#000000',
+        color: colors.textDark,
     },
     gameListContainer: {
         flex: 1,
@@ -214,26 +186,40 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     loadingText: {
-        color: 'white',
+        color: colors.text,
         textAlign: 'center',
         fontSize: 16,
         marginBottom: 10,
     },
     noGamesText: {
-        color: 'white',
+        color: colors.text,
         textAlign: 'center',
         fontSize: 16,
         marginTop: 20,
     },
     gameItem: {
-        backgroundColor: '#2DD881',
+        backgroundColor: colors.secondary,
         padding: 20,
         borderRadius: 8,
         marginBottom: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     gameName: {
-        color: '#000000',
+        color: colors.text,
         fontSize: 18,
+        fontWeight: 'bold',
+    },
+    joinBadge: {
+        backgroundColor: colors.primary,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+    },
+    joinBadgeText: {
+        color: colors.text,
+        fontSize: 14,
         fontWeight: 'bold',
     },
     buttonContainer: {
@@ -255,15 +241,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
     },
-    backButton: {
-        backgroundColor: '#E74C3C',
-    },
-    backButtonPressed: {
-        backgroundColor: '#C0392B',
-        opacity: 0.8,
-    },
     buttonText: {
-        color: '#FFFFFF',
+        color: colors.text,
         fontSize: 20,
         fontWeight: '600',
         letterSpacing: 0.5,
