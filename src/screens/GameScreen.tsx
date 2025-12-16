@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Player } from './RoomScreen';
-import { ChallengeProgress, GamePlayer } from '../types/challenge';
+import { GamePlayer } from '../types/challenge';
 import Leaderboard from '../components/Leaderboard';
 import { PatternBackground } from '../components/PatternBackground';
 import { useGameConnection } from "../hooks/useGameConnection";
@@ -48,10 +48,10 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const [challengesCompleted, setChallengesCompleted] = useState<number>(0);
   const [winner, setWinner] = useState<string | null>(null);
   const [showExplosion, setShowExplosion] = useState<string | null>(null);
-  const gameEnded = useRef<boolean>(false);
 
-  const throttledUpdates = useRef<{ [key: string]: ChallengeProgress }>({});
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Using refs for game-critical state that needs immediate synchronization across functions
+  // without waiting for React's state update cycle. This prevents race conditions in multiplayer logic.
+  const gameEnded = useRef<boolean>(false);
   const finishedPlayers = useRef<Set<string>>(new Set());
   const playerResults = useRef<{ [key: string]: { isCorrect: boolean; deltaTime: number } }>({});
   const readyPlayers = useRef<Set<string>>(new Set());
@@ -59,6 +59,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const challengeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFinishedRef = useRef<boolean>(false);
 
+  // Initial game setup - send ready signal and host initializes bomb mechanics
   useEffect(() => {
     sendGameAction('READY', { name: username });
 
@@ -132,6 +133,9 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     };
   }, []);
 
+  // Handle player disconnection with complex state cleanup
+  // Host must: clean up tracking refs, check for winner, handle mid-round disconnects,
+  // and trigger ready check if waiting for players
   const handlePlayerDisconnect = (playerName: string) => {
     console.log(`[GameScreen] Player disconnected: ${playerName}`);
 
@@ -204,13 +208,11 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const checkAllPlayersReady = () => {
     // Don't start new round if game has ended
     if (gameEnded.current) {
-      console.log(`[GameScreen] Game ended, not starting new round`);
       return;
     }
 
     // Only count non-eliminated players - use REF for immediate sync
     const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
-    console.log(`[GameScreen] Check ready: ${readyPlayers.current.size}/${activePlayers.length} ready, eliminated: [${Array.from(eliminatedPlayersRef.current).join(', ')}]`);
 
     if (readyPlayers.current.size === activePlayers.length && !isCountingDown.current) {
       isCountingDown.current = true; // Prevent duplicate countdowns
@@ -251,7 +253,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 
   const handlePlayerFinished = (playerName: string, isCorrect: boolean = true, deltaTime: number = 0) => {
     if (finishedPlayers.current.has(playerName)) {
-      console.log(`[GameScreen] Ignoring duplicate finish from ${playerName}`);
       return;
     }
 
@@ -263,7 +264,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 
     // Only count non-eliminated players - use REF for immediate sync
     const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
-    console.log(`[GameScreen] Player finished: ${playerName}, total finished: ${finishedPlayers.current.size}/${activePlayers.length}, active players: [${activePlayers.map(p => p.name).join(', ')}]`);
+    console.log(`[GameScreen] Player finished: ${playerName}, total: ${finishedPlayers.current.size}/${activePlayers.length}`);
 
     if (finishedPlayers.current.size === activePlayers.length) {
       console.log('[GameScreen] All players finished, determining loser...');
@@ -337,8 +338,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       // Check for winner - use REF for immediate sync (already includes just-eliminated player)
       const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
 
-      console.log(`[GameScreen] After explosion, active players: ${activePlayers.length}`, activePlayers.map(p => p.name));
-
       if (activePlayers.length === 1) {
         // We have a winner!
         gameEnded.current = true; // Mark game as ended
@@ -369,7 +368,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 
     // Don't send READY if game has ended
     if (gameEnded.current) {
-      console.log(`[GameScreen] Explosion complete, but game has ended`);
       return;
     }
 
@@ -378,13 +376,11 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
 
     if (isEliminated) {
       // Eliminated players don't send READY - they just spectate
-      console.log(`[GameScreen] Explosion complete, but player is eliminated (spectating)`);
       setStatusText('You are eliminated - Spectating...');
       return;
     }
 
     // Only non-eliminated players send READY after explosion animation completes
-    console.log(`[GameScreen] Explosion complete, sending READY`);
     setStatusText('Get ready for next round...');
     sendGameAction('READY', { name: username });
 
@@ -395,12 +391,9 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   }
 
   const startChallengeTimer = () => {
-    console.log(`[GameScreen] Starting 15-second challenge timer for ${username}`);
     // Set timeout to auto-finish after 15 seconds
     challengeTimeoutRef.current = setTimeout(() => {
-      console.log(`[GameScreen] Challenge timeout fired for ${username}, isFinished: ${isFinishedRef.current}`);
       if (!isFinishedRef.current) {
-        console.log(`[GameScreen] Auto-completing challenge for ${username}`);
         handleChallengeComplete(false);
       }
     }, 15000);
@@ -444,13 +437,11 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const sendReadyForNextRound = () => {
     // Don't send READY if game has ended
     if (gameEnded.current) {
-      console.log(`[GameScreen] Game ended, not sending READY`);
       return;
     }
 
     // Only send READY if not showing explosion (explosion will send READY when complete)
     if (showExplosion === null) {
-      console.log(`[GameScreen] Sending READY for next round`);
       setBombHolder(null);
       setStatusText('Get ready for next round...');
       sendGameAction('READY', { name: username });
@@ -459,8 +450,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
         readyPlayers.current.add(username);
         checkAllPlayersReady();
       }
-    } else {
-      console.log(`[GameScreen] Explosion showing, will send READY after explosion completes`);
     }
   };
 

@@ -38,7 +38,8 @@ class NetworkManagerService {
         this.zeroconf = new Zeroconf();
     }
 
-    // TODO: Maybe remove later
+    // Note: Currently unused - clients handle their own service discovery via JoinGameScreen.
+    // Kept for potential future centralized discovery implementation.
     startServiceDiscovery() {
         this.zeroconf.scan(SERVICE_TYPE, 'tcp', SERVICE_DOMAIN);
     }
