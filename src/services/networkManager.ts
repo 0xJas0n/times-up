@@ -26,6 +26,7 @@ class NetworkManagerService {
     private client: TcpSocket.Socket | null = null;
     private roomCode: string | null = null;
     private listeners: ((payload: any, senderId: string) => void)[] = [];
+    private gameStarted: boolean = false;
 
     // Singleton message state that persists across screen navigation
     private currentMessage: any = null;
@@ -55,6 +56,7 @@ class NetworkManagerService {
         }
 
         this.roomCode = roomCode;
+        this.gameStarted = false;
         this.zeroconf.publishService(SERVICE_TYPE, 'tcp', SERVICE_DOMAIN, roomCode, port, {});
         this.server = TcpSocket.createServer((socket) => {
             this.clients.push(socket);
@@ -151,6 +153,15 @@ class NetworkManagerService {
 
                 // Track player name for this socket when they join
                 if (type === PROTOCOL.PLAYER_JOIN && socket) {
+                    // If the game already started, refuse late joins by closing the socket
+                    if (this.gameStarted) {
+                        try {
+                            socket.destroy();
+                        } catch (e) {
+                            console.error('[NetworkManager] Error destroying late join socket:', e);
+                        }
+                        continue;
+                    }
                     this.clientPlayerMap.set(socket, payload);
                 }
 
@@ -164,6 +175,17 @@ class NetworkManagerService {
     broadcast(type: string, payload: any) {
         // Add newline delimiter to separate messages in the TCP stream
         const message = `${type}|${payload}\n`;
+        // If host starts the game, immediately hide the service so it can't be discovered anymore
+        if (type === PROTOCOL.GAME_START && this.server) {
+            this.gameStarted = true;
+            if (this.roomCode) {
+                try {
+                    this.zeroconf.unpublishService(this.roomCode);
+                } catch (e) {
+                    console.error('[NetworkManager] Error unpublishing service on game start:', e);
+                }
+            }
+        }
         if (this.server) {
             this.clients.forEach((client) => {
                 try {
