@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, Pressable, ScrollView, Alert, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { useGameConnection } from '../hooks/useGameConnection';
 import { RootStackParamList } from '../navigation/types';
 import {colors} from '../theme/colors';
 import Header from '../components/Header';
+import { useFocusEffect } from '@react-navigation/native';
 
 type RoomScreenProps = NativeStackScreenProps<RootStackParamList, 'Room'>;
 
@@ -19,8 +20,9 @@ export interface Player {
 export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     const { roomCode, username, isHost, service } = route.params;
     const [players, setPlayers] = useState<Player[]>([]);
+    const isExitingRef = useRef<boolean>(false);
 
-    const { startHostingGame, joinGame, broadcastGameState, broadcastPlayerList, lastMessage, disconnect, clearLastMessage } =
+    const { startHostingGame, joinGame, broadcastGameState, broadcastPlayerList, sendPlayerDisconnect, lastMessage, disconnect, clearLastMessage } =
         useGameConnection();
 
     // Initialization
@@ -46,6 +48,40 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
             // should persist when navigating to GameScreen
         };
     }, []);
+
+    // Intercept system/back navigation to ensure proper disconnect & broadcast
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (isExitingRef.current) {
+                // Allow default behavior if we've already initiated exit
+                return;
+            }
+            // Prevent leaving and run our cancellation logic
+            e.preventDefault();
+            // Trigger the same flow as pressing the UI leave/back button
+            handleCancel();
+            // Mark as exiting so the next navigation attempt proceeds
+            isExitingRef.current = true;
+        });
+        return unsubscribe;
+    }, [navigation]);
+
+    // Android hardware back button fallback (extra safety)
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => {
+                if (isExitingRef.current) {
+                    // Let the default back behavior proceed
+                    return false;
+                }
+                handleCancel();
+                isExitingRef.current = true;
+                return true; // We handled it
+            };
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [])
+    );
 
     // Listen for updates
     useEffect(() => {
@@ -154,6 +190,11 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     const handleCancel = async () => {
         if (isHost) {
             broadcastGameState('HOST_CANCEL');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        } else {
+            // Notify host this player is leaving the room so everyone updates their list
+            sendPlayerDisconnect(username);
+            // Give the message a brief moment to send
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         await disconnect();

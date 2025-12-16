@@ -128,6 +128,10 @@ export const useGameConnection = () => {
         NetworkManager.broadcast(PROTOCOL.PLAYER_LIST, JSON.stringify(players));
     };
 
+    const sendPlayerDisconnect = (playerName: string) => {
+        NetworkManager.broadcast(PROTOCOL.PLAYER_DISCONNECT, playerName);
+    };
+
     const disconnect = async () => {
         await NetworkManager.stop();
         NetworkManager.clearCurrentMessage();
@@ -146,6 +150,7 @@ export const useGameConnection = () => {
         sendGameAction,
         broadcastGameState,
         broadcastPlayerList,
+        sendPlayerDisconnect,
         disconnect,
         clearLastMessage
     };

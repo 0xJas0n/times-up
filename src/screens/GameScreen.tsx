@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Alert, StyleSheet, Text, View} from 'react-native';
+import {Alert, BackHandler, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {GamePlayer} from '../types/challenge';
@@ -13,6 +13,7 @@ import {ChallengeView} from '../components/game/ChallengeView';
 import {colors} from '../theme/colors';
 import {RootStackParamList} from '../navigation/types';
 import Header from '../components/Header';
+import {useFocusEffect} from '@react-navigation/native';
 
 type GameScreenProps = NativeStackScreenProps<RootStackParamList, 'Game'>;
 
@@ -53,6 +54,7 @@ const GameScreen = ({
     const [challengesCompleted, setChallengesCompleted] = useState<number>(0);
     const [winner, setWinner] = useState<string | null>(null);
     const [showExplosion, setShowExplosion] = useState<string | null>(null);
+    const isExitingRef = useRef<boolean>(false);
 
     // Using refs for game-critical state that needs immediate synchronization across functions
     // without waiting for React's state update cycle. This prevents race conditions in multiplayer logic.
@@ -69,14 +71,21 @@ const GameScreen = ({
     const challengeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isFinishedRef = useRef<boolean>(false);
     const handleLeave = () => {
+        if (isExitingRef.current) {
+            return;
+        }
         Alert.alert('Leave Game', 'Are you sure you want to leave the game?', [
             {
                 text: 'Cancel',
                 style: 'cancel',
+                onPress: () => {
+                    isExitingRef.current = false;
+                }
             },
             {
                 text: 'Leave',
                 onPress: async () => {
+                    isExitingRef.current = true;
                     await disconnect();
                     navigation.navigate('Home');
                 },
@@ -100,6 +109,33 @@ const GameScreen = ({
             checkAllPlayersReady();
         }
     }, []);
+
+    // Intercept system/back navigation to show the leave confirmation and disconnect properly
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (isExitingRef.current) {
+                return;
+            }
+            e.preventDefault();
+            handleLeave();
+        });
+        return unsubscribe;
+    }, [navigation]);
+
+    // Android hardware back button fallback
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => {
+                if (isExitingRef.current) {
+                    return false;
+                }
+                handleLeave();
+                return true;
+            };
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [])
+    );
 
     useEffect(() => {
         if (!lastMessage) {
