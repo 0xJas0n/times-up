@@ -97,7 +97,8 @@ export const useGameConnection = () => {
             NetworkManager.broadcast(PROTOCOL.GAME_START, '');
         }
 
-        if (state === 'START_ROUND') {
+        // Support both legacy 'START_ROUND' and current 'ROUND_START' names
+        if (state === 'START_ROUND' || state === 'ROUND_START') {
             NetworkManager.broadcast(PROTOCOL.ROUND_START, data.id.toString());
         }
 

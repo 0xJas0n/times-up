@@ -76,6 +76,7 @@ const GameScreen = ({
     // Host-side pre-round safety timer to avoid getting stuck on "Get Ready"
     const preRoundSafetyRef = useRef<NodeJS.Timeout | null>(null);
     const isFinishedRef = useRef<boolean>(false);
+    const preRoundCountdownCancelledRef = useRef<boolean>(false);
     const handleLeave = () => {
         if (isExitingRef.current) {
             return;
@@ -193,7 +194,8 @@ const GameScreen = ({
                 setShowExplosion(lastMessage.name);
             }
         } else if (lastMessage.type === 'GAME_WINNER') {
-            gameEnded.current = true;
+            // Mark game ended and cleanup any pending timers/countdowns
+            handleGameEndedCleanup();
             setWinner(lastMessage.name);
             setTimeout(() => {
                 navigation.navigate('Winner', {winnerName: lastMessage.name});
@@ -293,6 +295,28 @@ const GameScreen = ({
 
     const isCountingDown = useRef(false);
 
+    const handleGameEndedCleanup = () => {
+        gameEnded.current = true;
+        // Cancel any challenge timers
+        if (challengeTimeoutRef.current) {
+            clearTimeout(challengeTimeoutRef.current);
+            challengeTimeoutRef.current = null;
+        }
+        if (safetyTimerRef.current) {
+            clearTimeout(safetyTimerRef.current);
+            safetyTimerRef.current = null;
+        }
+        if (preRoundSafetyRef.current) {
+            clearTimeout(preRoundSafetyRef.current);
+            preRoundSafetyRef.current = null;
+        }
+        // Cancel any ongoing pre-round countdown
+        preRoundCountdownCancelledRef.current = true;
+        isCountingDown.current = false;
+        setCountdownNumber(null);
+        setCurrentChallenge(null);
+    };
+
     const checkAllPlayersReady = () => {
         // Don't start new round if game has ended
         if (gameEnded.current) {
@@ -339,15 +363,27 @@ const GameScreen = ({
     };
 
     const startCountdownThenChallenge = async (challengeId: number) => {
+        // If the game already ended, do not countdown
+        if (gameEnded.current) return;
+        preRoundCountdownCancelledRef.current = false;
+
         // Each client counts down locally from 3 to 1
         for (let i = 3; i > 0; i--) {
+            if (gameEnded.current || preRoundCountdownCancelledRef.current) {
+                setCountdownNumber(null);
+                return;
+            }
             setCountdownNumber(i);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
+        // Clear number before starting
         setCountdownNumber(null);
 
-        // After countdown, start the challenge
+        // After countdown, start the challenge unless game ended mid-countdown
+        if (gameEnded.current || preRoundCountdownCancelledRef.current) {
+            return;
+        }
         startClientRound(challengeId);
 
         // Reset countdown flag on host
@@ -363,7 +399,7 @@ const GameScreen = ({
         roundResolvedRef.current = false;
 
         // Broadcast ROUND_START with challenge ID - clients countdown then start
-        broadcastGameState('START_ROUND', {id: nextId});
+        broadcastGameState('ROUND_START', {id: nextId});
 
         // Host also counts down then starts (doesn't receive own broadcast)
         startCountdownThenChallenge(nextId);
@@ -476,7 +512,7 @@ const GameScreen = ({
 
             if (activePlayers.length === 1) {
                 // We have a winner!
-                gameEnded.current = true; // Mark game as ended
+                handleGameEndedCleanup(); // Mark ended and cleanup
                 const winnerName = activePlayers[0].name;
                 setWinner(winnerName);
                 setStatusText(`${winnerName} WINS!`);
