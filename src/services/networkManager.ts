@@ -5,24 +5,24 @@ const SERVICE_DOMAIN = 'local.';
 const SERVICE_TYPE = 'timesup-game';
 
 export const PROTOCOL = {
-    PLAYER_JOIN: 'PLAYER_JOIN',           // Client -> Host: player name
-    PLAYER_LIST: 'PLAYER_LIST',           // Host -> All: JSON array of players
-    PLAYER_DISCONNECT: 'PLAYER_DISCONNECT', // Internal: player disconnected
-    GAME_START: 'GAME_START',             // Host -> All: game starting
-    PLAYER_READY: 'PLAYER_READY',         // Client -> Host: player ready after animations complete
-    ROUND_START: 'ROUND_START',           // Host -> All: round ID - clients countdown then start
-    PLAYER_FINISHED: 'PLAYER_FINISHED',   // Client -> Host: player name who finished
-    ROUND_OVER: 'ROUND_OVER',             // Host -> All: loser name
-    PLAYER_ELIMINATED: 'PLAYER_ELIMINATED', // Host -> All: eliminated player name
-    GAME_WINNER: 'GAME_WINNER',           // Host -> All: winner name
-    HOST_CANCEL: 'HOST_CANCEL',           // Host -> All: host cancelled
+    PLAYER_JOIN: 'PLAYER_JOIN',                 // Client -> Host: player name
+    PLAYER_LIST: 'PLAYER_LIST',                 // Host -> All: JSON array of players
+    PLAYER_DISCONNECT: 'PLAYER_DISCONNECT',     // Internal: player disconnected
+    GAME_START: 'GAME_START',                   // Host -> All: game starting
+    PLAYER_READY: 'PLAYER_READY',               // Client -> Host: player ready after animations complete
+    ROUND_START: 'ROUND_START',                 // Host -> All: round ID - clients countdown then start
+    PLAYER_FINISHED: 'PLAYER_FINISHED',         // Client -> Host: player name who finished
+    ROUND_OVER: 'ROUND_OVER',                   // Host -> All: loser name
+    PLAYER_ELIMINATED: 'PLAYER_ELIMINATED',     // Host -> All: eliminated player name
+    GAME_WINNER: 'GAME_WINNER',                 // Host -> All: winner name
+    HOST_CANCEL: 'HOST_CANCEL',                 // Host -> All: host cancelled
 };
 
 class NetworkManagerService {
     private zeroconf: Zeroconf;
     private server: TcpSocket.Server | null = null;
     private clients: TcpSocket.Socket[] = [];
-    private clientPlayerMap: Map<TcpSocket.Socket, string> = new Map(); // Track which socket belongs to which player
+    private clientPlayerMap: Map<TcpSocket.Socket, string> = new Map();
     private client: TcpSocket.Socket | null = null;
     private roomCode: string | null = null;
     private listeners: ((payload: any, senderId: string) => void)[] = [];
@@ -30,7 +30,7 @@ class NetworkManagerService {
     // Singleton message state that persists across screen navigation
     private currentMessage: any = null;
 
-    // Buffer for incomplete messages (TCP stream can split messages)
+    // Buffer for incomplete messages
     private clientBuffer: string = '';
     private serverBuffers: Map<TcpSocket.Socket, string> = new Map();
 
@@ -38,6 +38,7 @@ class NetworkManagerService {
         this.zeroconf = new Zeroconf();
     }
 
+    // TODO: Maybe remove later
     startServiceDiscovery() {
         this.zeroconf.scan(SERVICE_TYPE, 'tcp', SERVICE_DOMAIN);
     }
@@ -73,19 +74,16 @@ class NetworkManagerService {
         const playerName = this.clientPlayerMap.get(socket);
         this.clients = this.clients.filter(s => s !== socket);
         this.clientPlayerMap.delete(socket);
-        this.serverBuffers.delete(socket); // Clear buffer for this client
+        this.serverBuffers.delete(socket);
 
-        // Notify listeners that a player disconnected
         if (playerName) {
             this.notifyListeners({ type: PROTOCOL.PLAYER_DISCONNECT, data: playerName }, 'server');
         }
     }
 
     connectToHost(host: string, port: number, onConnected?: () => void) {
-        // Prevent creating client if one already exists
         if (this.client) {
             try {
-                // Remove all event listeners before destroying
                 this.client.removeAllListeners();
                 this.client.destroy();
             } catch (e) {
@@ -206,14 +204,12 @@ class NetworkManagerService {
     async stop() {
         this.stopServiceDiscovery();
 
-        // Unpublish service FIRST to prevent new connections
         if (this.roomCode) {
             this.zeroconf.unpublishService(this.roomCode);
             this.roomCode = null;
         }
 
         if (this.server) {
-            // Notify clients before disconnecting
             this.broadcast(PROTOCOL.HOST_CANCEL, '');
 
             // Wait for the message to be sent before destroying connections
@@ -229,9 +225,8 @@ class NetworkManagerService {
             });
             this.clients = [];
             this.clientPlayerMap.clear();
-            this.serverBuffers.clear(); // Clear all client buffers
+            this.serverBuffers.clear();
 
-            // Close the server
             if (this.server) {
                 this.server.close();
                 this.server = null;
@@ -239,7 +234,7 @@ class NetworkManagerService {
         } else if (this.client) {
             this.client.destroy();
             this.client = null;
-            this.clientBuffer = ''; // Clear client buffer
+            this.clientBuffer = '';
         }
         this.zeroconf.stop();
     }

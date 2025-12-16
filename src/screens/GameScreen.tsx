@@ -2,17 +2,16 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { SvgXml } from 'react-native-svg';
 import { Player } from './RoomScreen';
 import { ChallengeProgress, GamePlayer } from '../types/challenge';
 import Leaderboard from '../components/Leaderboard';
 import { PatternBackground } from '../components/PatternBackground';
-import { debounce } from 'lodash';
 import { useGameConnection } from "../hooks/useGameConnection";
 import { CHALLENGES, Challenge, getRandomChallengeID } from "../data/challenges";
 import { ChallengeRenderer } from '../components/challenges/ChallengeRenderer';
 import { ChallengeTimer } from '../components/challenges/ChallengeTimer';
 import { ExplosionAnimation } from '../components/ExplosionAnimation';
+import BombIcon from '../assets/bomb-orange.svg';
 
 type RootStackParamList = {
   Room: { roomCode: string; username: string; players: Player[] };
@@ -22,9 +21,6 @@ type RootStackParamList = {
 };
 
 type GameScreenProps = NativeStackScreenProps<RootStackParamList, 'Game'>;
-
-// TODO: Outsource bomb icon
-const BOMB_SVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><g fill="#d35400"><path d="M17.981 2.353a.558.558 0 0 1 1.038 0l.654 1.66c.057.143.17.257.315.314l1.659.654c.47.186.47.852 0 1.038l-1.66.654a.56.56 0 0 0-.314.315l-.654 1.659a.558.558 0 0 1-1.038 0l-.654-1.66a.56.56 0 0 0-.315-.314l-1.659-.654a.558.558 0 0 1 0-1.038l1.66-.654a.56.56 0 0 0 .314-.315z"/><path fill-rule="evenodd" d="M17 14.5a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0m-5 2.25a.75.75 0 0 0 0-1.5h-2a.75.75 0 0 0 0 1.5zm2-4.25c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5.448-1.5 1-1.5 1 .672 1 1.5M9 14c.552 0 1-.672 1-1.5S9.552 11 9 11s-1 .672-1 1.5.448 1.5 1 1.5" clip-rule="evenodd"/><path d="m16.767 8.294-.75.75a8.6 8.6 0 0 0-1.06-1.061l.75-.75.76.3z"/></g></svg>`;
 
 const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const { roomCode, username, isHost, players: initialPlayers } = route.params;
@@ -62,7 +58,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const isFinishedRef = useRef<boolean>(false);
 
   useEffect(() => {
-    // Send READY signal when GameScreen mounts
     sendGameAction('READY', { name: username });
 
     if (isHost) {
@@ -83,9 +78,8 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
       return;
     }
 
-    // Stop processing messages after game has ended (winner determined)
+    // Stop processing messages after game has ended
     if (gameEnded.current && lastMessage.type !== 'GAME_WINNER') {
-      console.log(`[GameScreen] Ignoring ${lastMessage.type} - game already ended`);
       return;
     }
 
@@ -96,7 +90,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }
 
     if (lastMessage.type === 'ROUND_START') {
-      // Start countdown, then challenge (already synced at READY point)
       startCountdownThenChallenge(lastMessage.id);
     }
     else if (lastMessage.type === 'ROUND_OVER') {
@@ -107,16 +100,13 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }
     else if (lastMessage.type === 'PLAYER_ELIMINATED') {
       setEliminatedPlayers(prev => [...prev, lastMessage.name]);
-      // Also update ref immediately for sync-critical logic
       eliminatedPlayersRef.current.add(lastMessage.name);
-      // Show explosion for non-host clients
       if (!isHost) {
         setShowExplosion(lastMessage.name);
       }
     }
     else if (lastMessage.type === 'GAME_WINNER') {
-      // Navigate all clients to winner screen
-      gameEnded.current = true; // Mark game as ended
+      gameEnded.current = true;
       setWinner(lastMessage.name);
       setTimeout(() => {
         navigation.navigate('Winner', { winnerName: lastMessage.name });
@@ -132,7 +122,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     }
   }, [lastMessage]);
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (challengeTimeoutRef.current) {
@@ -144,41 +133,32 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
   const handlePlayerDisconnect = (playerName: string) => {
     console.log(`[GameScreen] Player disconnected: ${playerName}`);
 
-    // Show disconnect notification
     const previousStatus = statusText;
     setStatusText(`${playerName} left the game`);
     setTimeout(() => {
-      // Restore status if it hasn't changed
       setStatusText(prev => prev === `${playerName} left the game` ? previousStatus : prev);
     }, 2000);
 
-    // Remove player from the game
     setPlayers(prev => {
       const remainingPlayers = prev.filter(p => p.name !== playerName);
 
       if (isHost) {
-        // Clean up all host tracking for this player
         finishedPlayers.current.delete(playerName);
         delete playerResults.current[playerName];
         readyPlayers.current.delete(playerName);
 
-        // Check how many active (non-eliminated) players remain - use REF for immediate sync
         const activePlayers = remainingPlayers.filter(p => !eliminatedPlayersRef.current.has(p.name));
 
         if (activePlayers.length === 1) {
-          // Only one active player left - they win!
-          gameEnded.current = true; // Mark game as ended
+          gameEnded.current = true;
           const winnerName = activePlayers[0].name;
           setWinner(winnerName);
           setStatusText(`${winnerName} WINS!`);
-          // Stop any active challenge timer
           stopChallengeTimer();
           setCurrentChallenge(null);
 
-          // Broadcast winner to all clients
           broadcastGameState('GAME_WINNER', { name: winnerName });
 
-          // Host navigates after longer delay to ensure broadcast reaches all clients
           setTimeout(() => {
             navigation.navigate('Winner', { winnerName });
           }, 3000);
@@ -529,55 +509,6 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
     ]);
   };
 
-  const calculateRankings = useCallback(() => {
-    setPlayers((prevPlayers) => {
-      // const sortedPlayers = [...prevPlayers].sort((a, b) => {
-        // const aProgress = throttledUpdates.current[a.id] || { isComplete: false, customRank: Infinity, timestamp: Infinity };
-        // const bProgress = throttledUpdates.current[b.id] || { isComplete: false, customRank: Infinity, timestamp: Infinity };
-
-        // if (aProgress.isComplete && !bProgress.isComplete) return -1;
-        // if (!aProgress.isComplete && bProgress.isComplete) return 1;
-
-        // if (aProgress.customRank !== bProgress.customRank) {
-          // return (aProgress.customRank || Infinity) - (bProgress.customRank || Infinity);
-        // }
-
-        // return aProgress.timestamp - bProgress.timestamp;
-      // });
-
-      // return sortedPlayers.map((p, index) => ({ ...p, currentRank: index + 1 }));
-
-      // TODO: Simple ranking logic for now
-      return prevPlayers;
-    });
-  }, []);
-
-
-  // const handleProgressUpdate = (progress: ChallengeProgress) => {
-    // throttledUpdates.current[progress.playerId] = progress;
-  // if (!timeoutRef.current) {
-     // timeoutRef.current = setTimeout(() => {
-       // const updates = { ...throttledUpdates.current };
-        // throttledUpdates.current = {};
-        // timeoutRef.current = null;
-
-        // setPlayers((prevPlayers) => {
-          // const newPlayers = [...prevPlayers];
-          // Object.values(updates).forEach((update) => {
-            // const playerIndex = newPlayers.findIndex((p) => p.id === update.playerId);
-            // if (playerIndex !== -1) {
-              // Apply updates
-              // newPlayers[playerIndex].score += update.isCorrect ? 10 : 0;
-            // }
-          // });
-          // return newPlayers;
-        // });
-
-        // debouncedCalculateRankings();
-      // }, 100);
-    // }
-  // };
-
   return (
     <View style={styles.container}>
       <PatternBackground speed={10} tileSize={42} gap={42} />
@@ -603,7 +534,7 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
               </View>
           ) : bombHolder ? (
               <View style={styles.centerBox}>
-                <SvgXml xml={BOMB_SVG} width={120} height={120} />
+                <BombIcon width={120} height={120} />
                 <Text style={styles.statusText}>{statusText}</Text>
               </View>
           ) : currentChallenge ? (
