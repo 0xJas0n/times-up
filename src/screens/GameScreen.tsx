@@ -11,7 +11,9 @@ import { CHALLENGES, Challenge, getRandomChallengeID } from "../data/challenges"
 import { ChallengeRenderer } from '../components/challenges/ChallengeRenderer';
 import { ChallengeTimer } from '../components/challenges/ChallengeTimer';
 import { ExplosionAnimation } from '../components/ExplosionAnimation';
-import BombIcon from '../assets/bomb-orange.svg';
+import { CountdownView } from '../components/game/CountdownView';
+import { BombView } from '../components/game/BombView';
+import { ChallengeView } from '../components/game/ChallengeView';
 
 type RootStackParamList = {
   Room: { roomCode: string; username: string; players: Player[] };
@@ -529,36 +531,18 @@ const GameScreen = ({ route, navigation }: GameScreenProps) => {
         {/* Game Interaction Section */}
         <View style={styles.challengeContainer}>
           {countdownNumber !== null ? (
-              <View style={styles.centerBox}>
-                <Text style={styles.countdownText}>{countdownNumber}</Text>
-              </View>
+            <CountdownView countdownNumber={countdownNumber} />
           ) : bombHolder ? (
-              <View style={styles.centerBox}>
-                <BombIcon width={120} height={120} />
-                <Text style={styles.statusText}>{statusText}</Text>
-              </View>
+            <BombView statusText={statusText} />
           ) : currentChallenge ? (
-              <View style={styles.activeChallenge}>
-                {eliminatedPlayers.includes(username) ? (
-                  // Eliminated player spectator view
-                  <View style={styles.spectatorView}>
-                    <Text style={styles.spectatorEmoji}>👻</Text>
-                    <Text style={styles.spectatorTitle}>You are eliminated!</Text>
-                    <Text style={styles.spectatorText}>Spectating the game...</Text>
-                  </View>
-                ) : (
-                  <>
-                    <ChallengeRenderer
-                      challenge={currentChallenge}
-                      onComplete={handleChallengeComplete}
-                      disabled={isFinished}
-                    />
-                    <ChallengeTimer />
-                  </>
-                )}
-              </View>
+            <ChallengeView
+              challenge={currentChallenge}
+              isEliminated={eliminatedPlayers.includes(username)}
+              isFinished={isFinished}
+              onComplete={handleChallengeComplete}
+            />
           ) : (
-              <Text style={styles.statusText}>{statusText}</Text>
+            <Text style={styles.statusText}>{statusText}</Text>
           )}
         </View>
 
@@ -606,93 +590,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeChallenge: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flex: 1,
-  },
-  challengeTitle: {
-    color: '#2DD881',
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  instruction: {
-    color: 'white',
-    fontSize: 18,
-    marginBottom: 30,
-    textAlign: 'center',
-  },
-  tapBtn: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: '#3B82F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#3B82F6',
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-  },
-  disabledBtn: {
-    backgroundColor: '#475569',
-    shadowOpacity: 0,
-  },
-  tapText: {
-    color: 'white',
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  progress: {
-    color: '#94A3B8',
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: '600',
-  },
   statusText: {
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  bombText: {
-    fontSize: 80,
-    marginBottom: 20,
-  },
-  bombImage: {
-    width: 120,
-    height: 120,
-    marginBottom: 20,
-  },
-  countdownText: {
-    fontSize: 120,
-    fontWeight: 'bold',
-    color: '#2DD881',
-  },
-  centerBox: {
-    alignItems: 'center',
-  },
-  spectatorView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-  },
-  spectatorEmoji: {
-    fontSize: 100,
-  },
-  spectatorTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#999',
-    textAlign: 'center',
-  },
-  spectatorText: {
-    fontSize: 20,
-    color: '#666',
     textAlign: 'center',
   },
 });
