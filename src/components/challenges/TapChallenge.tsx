@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, Pressable, View } from 'react-native';
-import { Challenge } from '../../data/challenges';
+import { Challenge, TapChallenge as TapChallengeType } from '../../data/challenges';
 
 export interface ChallengeProps {
   challenge: Challenge;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 
 export const TapChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete, disabled }) => {
+  const tapChallenge = challenge as TapChallengeType;
   const [counter, setCounter] = useState(0);
 
   const handleTap = () => {
@@ -17,15 +18,15 @@ export const TapChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete, 
     const newVal = counter + 1;
     setCounter(newVal);
 
-    if (newVal >= challenge.target) {
-      onComplete();
+    if (newVal >= tapChallenge.target) {
+      onComplete(true); // Tap challenge is always "correct"
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{challenge.title}</Text>
-      <Text style={styles.instruction}>{challenge.instruction}</Text>
+      <Text style={styles.challengeTitle}>{tapChallenge.title}</Text>
+      <Text style={styles.instruction}>{tapChallenge.instruction}</Text>
 
       <Pressable
         style={[styles.tapBtn, disabled && styles.disabledBtn]}
@@ -38,7 +39,7 @@ export const TapChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete, 
       </Pressable>
 
       <Text style={styles.progress}>
-        {counter} / {challenge.target}
+        {counter} / {tapChallenge.target}
       </Text>
     </View>
   );

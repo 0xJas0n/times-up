@@ -2,10 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Challenge } from '../../data/challenges';
 import { TapChallenge, ChallengeProps } from './TapChallenge';
+import { MathChallenge } from './MathChallenge';
+import { TapSequenceChallenge } from './TapSequenceChallenge';
+import { TiltChallenge } from './TiltChallenge';
+import { CompassChallenge } from './CompassChallenge';
+import { ReactionChallenge } from './ReactionChallenge';
 
 interface ChallengeRendererProps {
   challenge: Challenge | null;
-  onComplete: () => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
   disabled: boolean;
 }
 
@@ -21,7 +26,11 @@ export const ChallengeRenderer: React.FC<ChallengeRendererProps> = ({
   // Map challenge types to their respective components
   const challengeComponents: Record<string, React.FC<ChallengeProps>> = {
     TAP: TapChallenge,
-    // TODO: Add new challenge types here
+    MATH: MathChallenge,
+    TAP_SEQUENCE: TapSequenceChallenge,
+    TILT: TiltChallenge,
+    COMPASS: CompassChallenge,
+    REACTION: ReactionChallenge,
   };
 
   const ChallengeComponent = challengeComponents[challenge.type];

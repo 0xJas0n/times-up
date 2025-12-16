@@ -4,62 +4,74 @@ import { ZeroconfService } from '../types/zeroconf';
 
 export const useGameConnection = () => {
     const [lastMessage, setLastMessage] = useState<any>(() => {
-        // Initialize with current message from NetworkManager
-        const currentMsg = NetworkManager.getCurrentMessage();
-        return currentMsg;
+        const currentMessage = NetworkManager.getCurrentMessage();
+        return currentMessage;
     });
     const roomCodeRef = useRef<string | null>(null);
 
     useEffect(() => {
         const unsubscribe = NetworkManager.subscribe((payload) => {
-            let formattedMsg = null;
+            let formattedMessage = null;
 
-            // Ignore service discovery messages - handled separately in JoinGameScreen
             if (payload.type === 'SERVICE_FOUND' || payload.type === 'SERVICE_LOST') {
                 return;
             }
 
             switch (payload.type) {
                 case PROTOCOL.PLAYER_JOIN:
-                    formattedMsg = { type: 'PLAYER_JOIN', name: payload.data };
+                    formattedMessage = { type: 'PLAYER_JOIN', name: payload.data };
                     break;
                 case PROTOCOL.PLAYER_LIST:
                     try {
                         const players = JSON.parse(payload.data);
-                        formattedMsg = { type: 'PLAYER_LIST', players };
+                        formattedMessage = { type: 'PLAYER_LIST', players };
                     } catch (e) {
                         console.error('Failed to parse player list', e);
                     }
                     break;
                 case PROTOCOL.PLAYER_DISCONNECT:
-                    formattedMsg = { type: 'PLAYER_DISCONNECT', name: payload.data };
+                    formattedMessage = { type: 'PLAYER_DISCONNECT', name: payload.data };
                     break;
                 case PROTOCOL.GAME_START:
-                    formattedMsg = { type: 'GAME_START' };
+                    formattedMessage = { type: 'GAME_START' };
                     break;
                 case PROTOCOL.PLAYER_READY:
-                    formattedMsg = { type: 'PLAYER_READY', name: payload.data };
-                    break;
-                case PROTOCOL.COUNTDOWN:
-                    formattedMsg = { type: 'COUNTDOWN', count: parseInt(payload.data, 10) };
-                    break;
-                case PROTOCOL.PLAYER_FINISHED:
-                    formattedMsg = { type: 'PLAYER_FINISHED', name: payload.data };
+                    formattedMessage = { type: 'PLAYER_READY', name: payload.data };
                     break;
                 case PROTOCOL.ROUND_START:
                     const challengeId = parseInt(payload.data, 10);
-                    formattedMsg = { type: 'ROUND_START', id: challengeId };
+                    formattedMessage = { type: 'ROUND_START', id: challengeId };
+                    break;
+                case PROTOCOL.PLAYER_FINISHED:
+                    try {
+                        const finishedData = JSON.parse(payload.data);
+                        formattedMessage = {
+                            type: 'PLAYER_FINISHED',
+                            name: finishedData.name,
+                            isCorrect: finishedData.isCorrect,
+                            deltaTime: finishedData.deltaTime
+                        };
+                    } catch (e) {
+                        console.error('Failed to parse PLAYER_FINISHED data', e);
+                        formattedMessage = { type: 'PLAYER_FINISHED', name: payload.data };
+                    }
                     break;
                 case PROTOCOL.ROUND_OVER:
-                    formattedMsg = { type: 'ROUND_OVER', loser: payload.data };
+                    formattedMessage = { type: 'ROUND_OVER', loser: payload.data };
+                    break;
+                case PROTOCOL.PLAYER_ELIMINATED:
+                    formattedMessage = { type: 'PLAYER_ELIMINATED', name: payload.data };
+                    break;
+                case PROTOCOL.GAME_WINNER:
+                    formattedMessage = { type: 'GAME_WINNER', name: payload.data };
                     break;
                 case PROTOCOL.HOST_CANCEL:
-                    formattedMsg = { type: 'HOST_CANCEL' };
+                    formattedMessage = { type: 'HOST_CANCEL' };
                     break;
             }
 
-            if (formattedMsg) {
-                setLastMessage(formattedMsg);
+            if (formattedMessage) {
+                setLastMessage(formattedMessage);
             }
         });
 
@@ -85,10 +97,6 @@ export const useGameConnection = () => {
             NetworkManager.broadcast(PROTOCOL.GAME_START, '');
         }
 
-        if (state === 'COUNTDOWN') {
-            NetworkManager.broadcast(PROTOCOL.COUNTDOWN, data.count.toString());
-        }
-
         if (state === 'START_ROUND') {
             NetworkManager.broadcast(PROTOCOL.ROUND_START, data.id.toString());
         }
@@ -96,11 +104,19 @@ export const useGameConnection = () => {
         if (state === 'ROUND_OVER') {
             NetworkManager.broadcast(PROTOCOL.ROUND_OVER, data.loser);
         }
+
+        if (state === 'PLAYER_ELIMINATED') {
+            NetworkManager.broadcast(PROTOCOL.PLAYER_ELIMINATED, data.name);
+        }
+
+        if (state === 'GAME_WINNER') {
+            NetworkManager.broadcast(PROTOCOL.GAME_WINNER, data.name);
+        }
     };
 
     const sendGameAction = async (actionType: string, data: any) => {
         if (actionType === 'FINISHED') {
-            NetworkManager.broadcast(PROTOCOL.PLAYER_FINISHED, data.name);
+            NetworkManager.broadcast(PROTOCOL.PLAYER_FINISHED, JSON.stringify(data));
         }
 
         if (actionType === 'READY') {
