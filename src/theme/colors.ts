@@ -12,6 +12,13 @@ export const colors = {
   error: '#FF6B6B',
   errorDark: '#D95A5A',
   warning: '#FFA500',
+  // TapSequence specific palette
+  teal: '#4ECDC4',
+  tealDark: '#3A9993',
+  yellow: '#FFD93D',
+  yellowDark: '#BFA32E',
+  greenLight: '#6BCF7F',
+  greenLightDark: '#509B5F',
   disabled: '#475569',
   lightGray: '#E8E8E8',
   mediumGray: '#CCCCCC',

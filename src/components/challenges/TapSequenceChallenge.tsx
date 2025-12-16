@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, Pressable, View } from 'react-native';
+import { colors as themeColors } from '../../theme/colors';
 import { Challenge, TapSequenceChallenge as TapSequenceChallengeType } from '../../data/challenges';
 
 export interface ChallengeProps {
@@ -112,10 +113,14 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
     return [styles.button, styles.activeButton];
   };
 
-  const getButtonColor = (index: number) => {
-    const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#6BCF7F'];
-    return colors[index];
-  };
+  // CSS-like simplicity: static style classes instead of functions
+  const baseButtonStyles = [styles.btn0, styles.btn1, styles.btn2, styles.btn3];
+  const pressedButtonStyles = [
+    styles.btn0Pressed,
+    styles.btn1Pressed,
+    styles.btn2Pressed,
+    styles.btn3Pressed,
+  ];
 
   return (
     <View style={styles.container}>
@@ -137,9 +142,10 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
         {[0, 1, 2, 3].map((index) => (
           <Pressable
             key={index}
-            style={[
+            style={({ pressed }) => [
               getButtonStyle(index),
-              { backgroundColor: getButtonColor(index) }
+              baseButtonStyles[index],
+              pressed && pressedButtonStyles[index],
             ]}
             onPress={() => handleButtonPress(index)}
             disabled={showingSequence || disabled || isWrong}
@@ -191,6 +197,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
+  // Base background colors per button (CSS-like classes)
+  btn0: { backgroundColor: themeColors.error },
+  btn0Pressed: { backgroundColor: themeColors.errorDark },
+  btn1: { backgroundColor: themeColors.teal },
+  btn1Pressed: { backgroundColor: themeColors.tealDark },
+  btn2: { backgroundColor: themeColors.yellow },
+  btn2Pressed: { backgroundColor: themeColors.yellowDark },
+  btn3: { backgroundColor: themeColors.greenLight },
+  btn3Pressed: { backgroundColor: themeColors.greenLightDark },
   highlightedButton: {
     transform: [{ scale: 1.1 }],
     elevation: 10,
