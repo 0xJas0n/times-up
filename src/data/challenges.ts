@@ -174,54 +174,22 @@ export const CHALLENGES: Record<number, Challenge> = {
     },
     17: {
         id: 17,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the north!',
-        targetDirection: 'north',
-        tolerance: 20,
-    },
-    18: {
-        id: 18,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the south!',
-        targetDirection: 'south',
-        tolerance: 20,
-    },
-    19: {
-        id: 19,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the east!',
-        targetDirection: 'east',
-        tolerance: 20,
-    },
-    20: {
-        id: 20,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the west!',
-        targetDirection: 'west',
-        tolerance: 20,
-    },
-    21: {
-        id: 21,
         type: 'REACTION',
         title: 'Reaction Challenge',
         instruction: 'Tap when the color changes!',
         waitTimeMin: 2000,
         waitTimeMax: 5000,
     },
-    22: {
-        id: 22,
+    18: {
+        id: 18,
         type: 'REACTION',
         title: 'Reaction Challenge',
         instruction: 'React as fast as you can!',
         waitTimeMin: 1500,
         waitTimeMax: 4000,
     },
-    23: {
-        id: 23,
+    19: {
+        id: 19,
         type: 'REACTION',
         title: 'Reaction Challenge',
         instruction: 'Wait for it... then tap!',
@@ -229,6 +197,40 @@ export const CHALLENGES: Record<number, Challenge> = {
         waitTimeMax: 6000,
     },
 };
+
+// Compass challenge for later use maybe
+// 17: {
+//     id: 17,
+//         type: 'COMPASS',
+//         title: 'Compass Challenge',
+//         instruction: 'Point your phone to the north!',
+//         targetDirection: 'north',
+//         tolerance: 20,
+// },
+// 18: {
+//     id: 18,
+//         type: 'COMPASS',
+//         title: 'Compass Challenge',
+//         instruction: 'Point your phone to the south!',
+//         targetDirection: 'south',
+//         tolerance: 20,
+// },
+// 19: {
+//     id: 19,
+//         type: 'COMPASS',
+//         title: 'Compass Challenge',
+//         instruction: 'Point your phone to the east!',
+//         targetDirection: 'east',
+//         tolerance: 20,
+// },
+// 20: {
+//     id: 20,
+//         type: 'COMPASS',
+//         title: 'Compass Challenge',
+//         instruction: 'Point your phone to the west!',
+//         targetDirection: 'west',
+//         tolerance: 20,
+// },
 
 export const getRandomChallengeID = () => {
     const keys = Object.keys(CHALLENGES);
