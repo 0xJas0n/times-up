@@ -75,9 +75,6 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{reactionChallenge.title}</Text>
-      <Text style={styles.instruction}>{reactionChallenge.instruction}</Text>
-
       <Pressable
         style={[
           styles.reactionButton,
@@ -98,18 +95,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     width: '100%',
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 5,
   },
   reactionButton: {
     width: 200,

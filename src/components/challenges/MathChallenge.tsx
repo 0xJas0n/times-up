@@ -58,9 +58,6 @@ export const MathChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{mathChallenge.title}</Text>
-      <Text style={styles.instruction}>{mathChallenge.instruction}</Text>
-
       <View style={styles.questionContainer}>
         <Text style={styles.question}>{mathChallenge.question}</Text>
       </View>
@@ -87,18 +84,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     width: '100%',
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 5,
   },
   questionContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

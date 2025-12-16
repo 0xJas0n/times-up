@@ -104,9 +104,6 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{tiltChallenge.title}</Text>
-      <Text style={styles.instruction}>{tiltChallenge.instruction}</Text>
-
       {/* Phone icon - stationary */}
       <View style={styles.phoneContainer}>
         <View style={styles.phoneIcon}>
@@ -138,18 +135,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 15,
     width: '100%',
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 5,
   },
   phoneContainer: {
     justifyContent: 'center',

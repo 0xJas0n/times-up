@@ -128,9 +128,6 @@ export const CompassChallenge: React.FC<ChallengeProps> = ({ challenge, onComple
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{compassChallenge.title}</Text>
-      <Text style={styles.instruction}>{compassChallenge.instruction}</Text>
-
       {/* Compass icon - stationary */}
       <View style={styles.compassContainer}>
         <View style={styles.compassCircle}>
@@ -159,18 +156,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 15,
     width: '100%',
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 5,
   },
   compassContainer: {
     justifyContent: 'center',

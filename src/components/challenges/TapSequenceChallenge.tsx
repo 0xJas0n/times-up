@@ -102,11 +102,6 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{sequenceChallenge.title}</Text>
-      <Text style={styles.instruction}>
-        {showingSequence ? 'Watch the pattern...' : sequenceChallenge.instruction}
-      </Text>
-
       <View style={styles.progressContainer}>
         <Text style={styles.progress}>
           {isWrong ? 'Wrong!' : isCorrect ? 'Correct!' : `${userSequence.length} / ${sequence.length}`}
@@ -138,18 +133,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     width: '100%',
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 5,
   },
   progressContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

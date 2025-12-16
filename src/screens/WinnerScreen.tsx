@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PatternBackground } from '../components/PatternBackground';
 import { useGameConnection } from '../hooks/useGameConnection';
+import { colors } from '../theme/colors';
 
 type RootStackParamList = {
   Home: undefined;
@@ -140,7 +141,13 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
 
           {/* Buttons */}
           <View style={styles.buttonContainer}>
-            <Pressable style={styles.homeButton} onPress={handleHome}>
+            <Pressable
+              onPress={handleHome}
+              style={({ pressed }) => [
+                styles.homeButton,
+                pressed && styles.homeButtonPressed,
+              ]}
+            >
               <Text style={styles.homeButtonText}>Home</Text>
             </Pressable>
           </View>
@@ -153,7 +160,7 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -190,7 +197,7 @@ const styles = StyleSheet.create({
   winnerName: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -207,18 +214,24 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   homeButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  homeButtonPressed: {
+    backgroundColor: colors.primaryDark,
   },
   homeButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text,
   },
 });
 

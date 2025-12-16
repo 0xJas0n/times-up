@@ -3,7 +3,6 @@ import {Alert, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {GamePlayer} from '../types/challenge';
-import Leaderboard from '../components/Leaderboard';
 import {PatternBackground} from '../components/PatternBackground';
 import {useGameConnection} from '../hooks/useGameConnection';
 import {Challenge, CHALLENGES, getRandomChallengeID} from '../data/challenges';
@@ -519,11 +518,7 @@ const GameScreen = ({
         <View style={styles.container}>
             <PatternBackground speed={10} tileSize={42} gap={42}/>
             <SafeAreaView style={styles.safeArea}>
-                <Header onLeave={handleLeave}/>
-                {/* Leaderboard Section */}
-                <View style={styles.leaderboardContainer}>
-                    <Leaderboard players={players} eliminatedPlayers={eliminatedPlayers}/>
-                </View>
+                <Header onLeave={handleLeave} title="Game"/>
 
                 {/* Game Interaction Section */}
                 <View style={styles.challengeContainer}>
@@ -576,15 +571,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     opacity: 0.8,
   },
-  leaderboardContainer: {
-    flex: 1,
-    marginTop: 60,
-  },
   challengeContainer: {
-    flex: 2,
+    flex: 1,
     backgroundColor: colors.secondary,
     borderRadius: 20,
     padding: 20,
+    marginTop: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
