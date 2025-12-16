@@ -69,6 +69,12 @@ const GameScreen = ({
     const readyPlayers = useRef<Set<string>>(new Set());
     const eliminatedPlayersRef = useRef<Set<string>>(new Set());
     const challengeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // Host-side safety timer to authoritatively end a round if clients don't report
+    const safetyTimerRef = useRef<NodeJS.Timeout | null>(null);
+    // Prevent double-resolution of a round (normal finish vs. safety timer)
+    const roundResolvedRef = useRef<boolean>(false);
+    // Host-side pre-round safety timer to avoid getting stuck on "Get Ready"
+    const preRoundSafetyRef = useRef<NodeJS.Timeout | null>(null);
     const isFinishedRef = useRef<boolean>(false);
     const handleLeave = () => {
         if (isExitingRef.current) {
@@ -107,7 +113,28 @@ const GameScreen = ({
             console.log(`[GameScreen] Bomb will explode after ${randomExplosion} challenges`);
 
             checkAllPlayersReady();
+
+            // Schedule a pre-round safety start in case some READY messages are missed
+            schedulePreRoundSafety();
         }
+    }, []);
+
+    // Cleanup timers on unmount
+    useEffect(() => {
+        return () => {
+            if (challengeTimeoutRef.current) {
+                clearTimeout(challengeTimeoutRef.current);
+                challengeTimeoutRef.current = null;
+            }
+            if (safetyTimerRef.current) {
+                clearTimeout(safetyTimerRef.current);
+                safetyTimerRef.current = null;
+            }
+            if (preRoundSafetyRef.current) {
+                clearTimeout(preRoundSafetyRef.current);
+                preRoundSafetyRef.current = null;
+            }
+        };
     }, []);
 
     // Intercept system/back navigation to show the leave confirmation and disconnect properly
@@ -256,6 +283,11 @@ const GameScreen = ({
 
     const handlePlayerReady = (playerName: string) => {
         readyPlayers.current.add(playerName);
+        // Any READY should attempt to progress; also cancel pre-round safety if countdown already started soon
+        if (preRoundSafetyRef.current && isCountingDown.current) {
+            clearTimeout(preRoundSafetyRef.current);
+            preRoundSafetyRef.current = null;
+        }
         checkAllPlayersReady();
     };
 
@@ -267,14 +299,43 @@ const GameScreen = ({
             return;
         }
 
-        // Only count non-eliminated players - use REF for immediate sync
-        const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
+        // Determine expected active players for this round using a robust union of:
+        // - Route-provided players who are not eliminated (may be slightly stale on host)
+        // - Any players who already sent READY (ensures we don't block if the route list missed someone)
+        const routeActiveNames = new Set(
+            players.filter(p => !eliminatedPlayersRef.current.has(p.name)).map(p => p.name)
+        );
+        const expectedActiveNames = new Set(routeActiveNames);
+        readyPlayers.current.forEach(name => expectedActiveNames.add(name));
 
-        if (readyPlayers.current.size === activePlayers.length && !isCountingDown.current) {
+        // Start when all expected active names have reported READY
+        if (readyPlayers.current.size === expectedActiveNames.size && !isCountingDown.current) {
             isCountingDown.current = true; // Prevent duplicate countdowns
             readyPlayers.current.clear(); // Clear for next round
+            // Clear any pre-round safety timer since we're starting normally
+            if (preRoundSafetyRef.current) {
+                clearTimeout(preRoundSafetyRef.current);
+                preRoundSafetyRef.current = null;
+            }
             startNewRound();
         }
+    };
+
+    const schedulePreRoundSafety = () => {
+        if (!isHost) return;
+        if (preRoundSafetyRef.current) {
+            clearTimeout(preRoundSafetyRef.current);
+        }
+        // After 7s, if we still haven't started the countdown, force-start a new round
+        preRoundSafetyRef.current = setTimeout(() => {
+            if (gameEnded.current) return;
+            if (isCountingDown.current) return;
+            // Start even if not all READY; in-round safety timer will handle missing reports
+            console.log('[GameScreen] Pre-round safety triggered: forcing round start');
+            isCountingDown.current = true;
+            readyPlayers.current.clear();
+            startNewRound();
+        }, 7000);
     };
 
     const startCountdownThenChallenge = async (challengeId: number) => {
@@ -299,6 +360,7 @@ const GameScreen = ({
         const nextId = getRandomChallengeID();
         finishedPlayers.current.clear();
         playerResults.current = {};
+        roundResolvedRef.current = false;
 
         // Broadcast ROUND_START with challenge ID - clients countdown then start
         broadcastGameState('START_ROUND', {id: nextId});
@@ -344,6 +406,22 @@ const GameScreen = ({
     };
 
     const endRound = (loserName: string) => {
+        // Guard: avoid duplicate endRound calls
+        if (roundResolvedRef.current) {
+            return;
+        }
+        roundResolvedRef.current = true;
+
+        // Clear all timers related to this round
+        if (challengeTimeoutRef.current) {
+            clearTimeout(challengeTimeoutRef.current);
+            challengeTimeoutRef.current = null;
+        }
+        if (safetyTimerRef.current) {
+            clearTimeout(safetyTimerRef.current);
+            safetyTimerRef.current = null;
+        }
+
         broadcastGameState('ROUND_OVER', {loser: loserName});
         endClientRound(loserName);
 
@@ -364,6 +442,8 @@ const GameScreen = ({
             setTimeout(() => {
                 // Prompt players to get ready for next round
                 setStatusText('Get ready for next round...');
+                // Host sets a pre-round safety timeout to avoid being stuck
+                schedulePreRoundSafety();
             }, 3000);
         }
     }
@@ -481,7 +561,48 @@ const GameScreen = ({
                 isFinishedRef.current = false; // Reset ref
                 setStatusText(challenge.instruction);
                 setChallengeStartTime(Date.now()); // Record start time
-                startChallengeTimer(); // Start 15-second timer
+                startChallengeTimer(); // Start 15-second client timer
+
+                // Host starts an authoritative safety timer for the round
+                if (isHost) {
+                    if (safetyTimerRef.current) {
+                        clearTimeout(safetyTimerRef.current);
+                    }
+                    safetyTimerRef.current = setTimeout(() => {
+                        // If round already resolved (normal path), skip
+                        if (roundResolvedRef.current) return;
+
+                        // Compute missing players among active (non-eliminated)
+                        const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
+                        const missing = activePlayers
+                            .map(p => p.name)
+                            .filter(name => !finishedPlayers.current.has(name));
+
+                        // Apply max penalty to missing players
+                        missing.forEach(name => {
+                            if (!playerResults.current[name]) {
+                                playerResults.current[name] = {
+                                    isCorrect: false,
+                                    deltaTime: Number.MAX_SAFE_INTEGER,
+                                };
+                            }
+                            finishedPlayers.current.add(name);
+                        });
+
+                        // Determine loser with the same logic as normal finish
+                        const results = Object.entries(playerResults.current);
+                        if (results.length > 0) {
+                            const wrongAnswers = results.filter(([_, r]) => !r.isCorrect);
+                            let loserName: string;
+                            if (wrongAnswers.length > 0) {
+                                loserName = wrongAnswers.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+                            } else {
+                                loserName = results.sort((a, b) => b[1].deltaTime - a[1].deltaTime)[0][0];
+                            }
+                            endRound(loserName);
+                        }
+                    }, 17000); // 17s safety window
+                }
             }
 
             setBombHolder(null);
