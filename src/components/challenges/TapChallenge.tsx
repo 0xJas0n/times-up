@@ -19,7 +19,7 @@ export const TapChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete, 
     setCounter(newVal);
 
     if (newVal >= tapChallenge.target) {
-      onComplete(true); // Tap challenge is always "correct"
+      onComplete(true);
     }
   };
 

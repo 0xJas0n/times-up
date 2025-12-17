@@ -17,7 +17,7 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
   const [highlightedButton, setHighlightedButton] = useState<number | null>(null);
   const [isWrong, setIsWrong] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [startedShowing, setStartedShowing] = useState(false); // distinguish pre-delay vs showing
+  const [startedShowing, setStartedShowing] = useState(false);
 
   // Generate random sequence on mount
   useEffect(() => {
@@ -28,18 +28,17 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
     setSequence(newSequence);
   }, [sequenceChallenge.sequenceLength]);
 
-  // Show sequence animation
   useEffect(() => {
     if (sequence.length === 0) return;
 
     let timeoutIds: NodeJS.Timeout[] = [];
 
     const showSequence = async () => {
-      const initialDelay = 700; // small delay before pattern starts showing
+      const initialDelay = 700;
       const stepDuration = 800;
       const highlightDuration = 400;
 
-      setStartedShowing(false); // entering pre-delay phase
+      setStartedShowing(false);
       setShowingSequence(true);
 
       // mark when the pattern actually starts
@@ -83,14 +82,12 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
     // Check if the tap is correct
     if (sequence[newUserSequence.length - 1] !== index) {
       setIsWrong(true);
-      // Wrong answer - complete with false
       setTimeout(() => {
         onComplete(false);
       }, 300);
       return;
     }
 
-    // Check if sequence is complete
     if (newUserSequence.length === sequence.length) {
       setIsCorrect(true);
       setTimeout(() => {
@@ -113,7 +110,6 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
     return [styles.button, styles.activeButton];
   };
 
-  // CSS-like simplicity: static style classes instead of functions
   const baseButtonStyles = [styles.btn0, styles.btn1, styles.btn2, styles.btn3];
   const pressedButtonStyles = [
     styles.btn0Pressed,
@@ -197,7 +193,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
-  // Base background colors per button (CSS-like classes)
   btn0: { backgroundColor: themeColors.error },
   btn0Pressed: { backgroundColor: themeColors.errorDark },
   btn1: { backgroundColor: themeColors.teal },

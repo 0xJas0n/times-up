@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, Animated, Easing } from 'react-native';
 
-interface ChallengeTimerProps {
-  // No props needed - timer runs independently
-}
+interface ChallengeTimerProps {}
 
 const TIMER_DURATION = 15;
-const YELLOW_THRESHOLD = 10; // Switch to yellow at 10s remaining
-const RED_THRESHOLD = 5;     // Switch to red at 5s remaining
+const YELLOW_THRESHOLD = 10;
+const RED_THRESHOLD = 5;
 
 type ColorState = 'green' | 'yellow' | 'red';
 
@@ -17,7 +15,6 @@ export const ChallengeTimer: React.FC<ChallengeTimerProps> = () => {
   const [colorState, setColorState] = useState<ColorState>('green');
 
   useEffect(() => {
-    // Start smooth animation from full to empty over full duration
     Animated.timing(progressWidth, {
       toValue: 0,
       duration: TIMER_DURATION * 1000,
@@ -25,7 +22,6 @@ export const ChallengeTimer: React.FC<ChallengeTimerProps> = () => {
       useNativeDriver: false,
     }).start();
 
-    // Set color transitions at the right times
     const yellowTimeout = setTimeout(() => {
       setColorState('yellow');
     }, (TIMER_DURATION - YELLOW_THRESHOLD) * 1000);
@@ -42,7 +38,6 @@ export const ChallengeTimer: React.FC<ChallengeTimerProps> = () => {
 
   useEffect(() => {
     if (colorState === 'red') {
-      // Start pulse animation when red
       const pulseAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseOpacity, {

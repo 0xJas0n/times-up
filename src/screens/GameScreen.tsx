@@ -55,9 +55,6 @@ const GameScreen = ({
     const [winner, setWinner] = useState<string | null>(null);
     const [showExplosion, setShowExplosion] = useState<string | null>(null);
     const isExitingRef = useRef<boolean>(false);
-
-    // Using refs for game-critical state that needs immediate synchronization across functions
-    // without waiting for React's state update cycle. This prevents race conditions in multiplayer logic.
     const gameEnded = useRef<boolean>(false);
     const finishedPlayers = useRef<Set<string>>(new Set());
     const playerResults = useRef<{
@@ -71,7 +68,6 @@ const GameScreen = ({
     const challengeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     // Host-side safety timer to authoritatively end a round if clients don't report
     const safetyTimerRef = useRef<NodeJS.Timeout | null>(null);
-    // Prevent double-resolution of a round (normal finish vs. safety timer)
     const roundResolvedRef = useRef<boolean>(false);
     // Host-side pre-round safety timer to avoid getting stuck on "Get Ready"
     const preRoundSafetyRef = useRef<NodeJS.Timeout | null>(null);
@@ -105,7 +101,6 @@ const GameScreen = ({
         sendGameAction('READY', {name: username});
 
         if (isHost) {
-            // Host marks themselves as ready
             readyPlayers.current.add(username);
 
             // Generate initial random explosion number (3-7 challenges)
@@ -114,13 +109,10 @@ const GameScreen = ({
             console.log(`[GameScreen] Bomb will explode after ${randomExplosion} challenges`);
 
             checkAllPlayersReady();
-
-            // Schedule a pre-round safety start in case some READY messages are missed
             schedulePreRoundSafety();
         }
     }, []);
 
-    // Cleanup timers on unmount
     useEffect(() => {
         return () => {
             if (challengeTimeoutRef.current) {
@@ -170,12 +162,10 @@ const GameScreen = ({
             return;
         }
 
-        // Stop processing messages after game has ended
         if (gameEnded.current && lastMessage.type !== 'GAME_WINNER') {
             return;
         }
 
-        // Only process game-specific messages in GameScreen
         const gameMessages = ['ROUND_START', 'ROUND_OVER', 'PLAYER_READY', 'PLAYER_FINISHED', 'PLAYER_DISCONNECT', 'PLAYER_ELIMINATED', 'GAME_WINNER'];
         if (!gameMessages.includes(lastMessage.type)) {
             return;
@@ -194,7 +184,6 @@ const GameScreen = ({
                 setShowExplosion(lastMessage.name);
             }
         } else if (lastMessage.type === 'GAME_WINNER') {
-            // Mark game ended and cleanup any pending timers/countdowns
             handleGameEndedCleanup();
             setWinner(lastMessage.name);
             setTimeout(() => {
@@ -272,7 +261,6 @@ const GameScreen = ({
                         }
                     }
 
-                    // If waiting for players to be ready, check if all remaining active players are ready
                     if (!currentChallenge && !countdownNumber && readyPlayers.current.size === activePlayers.length) {
                         checkAllPlayersReady();
                     }
@@ -297,7 +285,6 @@ const GameScreen = ({
 
     const handleGameEndedCleanup = () => {
         gameEnded.current = true;
-        // Cancel any challenge timers
         if (challengeTimeoutRef.current) {
             clearTimeout(challengeTimeoutRef.current);
             challengeTimeoutRef.current = null;
@@ -310,7 +297,6 @@ const GameScreen = ({
             clearTimeout(preRoundSafetyRef.current);
             preRoundSafetyRef.current = null;
         }
-        // Cancel any ongoing pre-round countdown
         preRoundCountdownCancelledRef.current = true;
         isCountingDown.current = false;
         setCountdownNumber(null);
@@ -323,7 +309,7 @@ const GameScreen = ({
             return;
         }
 
-        // Determine expected active players for this round using a robust union of:
+        // Determine expected active players for this round using a robust mix of:
         // - Route-provided players who are not eliminated (may be slightly stale on host)
         // - Any players who already sent READY (ensures we don't block if the route list missed someone)
         const routeActiveNames = new Set(
@@ -354,7 +340,7 @@ const GameScreen = ({
         preRoundSafetyRef.current = setTimeout(() => {
             if (gameEnded.current) return;
             if (isCountingDown.current) return;
-            // Start even if not all READY; in-round safety timer will handle missing reports
+            // Start even if not all READY
             console.log('[GameScreen] Pre-round safety triggered: forcing round start');
             isCountingDown.current = true;
             readyPlayers.current.clear();
@@ -398,10 +384,7 @@ const GameScreen = ({
         playerResults.current = {};
         roundResolvedRef.current = false;
 
-        // Broadcast ROUND_START with challenge ID - clients countdown then start
         broadcastGameState('ROUND_START', {id: nextId});
-
-        // Host also counts down then starts (doesn't receive own broadcast)
         startCountdownThenChallenge(nextId);
     };
 
@@ -416,7 +399,6 @@ const GameScreen = ({
             deltaTime,
         };
 
-        // Only count non-eliminated players - use REF for immediate sync
         const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
         console.log(`[GameScreen] Player finished: ${playerName}, total: ${finishedPlayers.current.size}/${activePlayers.length}`);
 
@@ -424,8 +406,6 @@ const GameScreen = ({
             console.log('[GameScreen] All players finished, determining loser...');
             // Determine loser based on: 1. Correctness (wrong answer = loser), 2. Speed (slowest = loser)
             const results = Object.entries(playerResults.current);
-
-            // First, check if anyone got it wrong
             const wrongAnswers = results.filter(([_, r]) => !r.isCorrect);
 
             let loserName: string;
@@ -461,13 +441,12 @@ const GameScreen = ({
         broadcastGameState('ROUND_OVER', {loser: loserName});
         endClientRound(loserName);
 
-        // Increment challenges completed
         const newCount = challengesCompleted + 1;
         setChallengesCompleted(newCount);
 
         // Check if bomb should explode
         if (newCount >= challengesUntilExplosion) {
-            // Bomb explodes! Eliminate the player with the bomb
+            // Bomb explodes
             // Call at 2500ms so explosion shows BEFORE sendReadyForNextRound checks at 3000ms
             setTimeout(() => {
                 eliminatePlayer(loserName);
@@ -478,7 +457,6 @@ const GameScreen = ({
             setTimeout(() => {
                 // Prompt players to get ready for next round
                 setStatusText('Get ready for next round...');
-                // Host sets a pre-round safety timeout to avoid being stuck
                 schedulePreRoundSafety();
             }, 3000);
         }
@@ -487,37 +465,25 @@ const GameScreen = ({
     const eliminatePlayer = (playerName: string) => {
         console.log(`[GameScreen] Eliminating player: ${playerName}`);
 
-        // Show explosion animation
         setShowExplosion(playerName);
-
-        // Broadcast elimination to all clients
         broadcastGameState('PLAYER_ELIMINATED', {name: playerName});
-
-        // Add to eliminated list (state for UI)
         setEliminatedPlayers(prev => [...prev, playerName]);
 
-        // Also update ref immediately for sync-critical logic
         eliminatedPlayersRef.current.add(playerName);
     }
 
     const handleExplosionComplete = () => {
-        // Capture who was eliminated BEFORE clearing showExplosion
         const eliminatedPlayerName = showExplosion;
         setShowExplosion(null);
 
         if (isHost) {
-            // Host handles winner determination and game continuation
-            // Check for winner - use REF for immediate sync (already includes just-eliminated player)
             const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
 
             if (activePlayers.length === 1) {
-                // We have a winner!
-                handleGameEndedCleanup(); // Mark ended and cleanup
+                handleGameEndedCleanup();
                 const winnerName = activePlayers[0].name;
                 setWinner(winnerName);
                 setStatusText(`${winnerName} WINS!`);
-
-                // Broadcast winner to all clients
                 broadcastGameState('GAME_WINNER', {name: winnerName});
 
                 // Host navigates after longer delay to ensure broadcast reaches all clients
@@ -525,7 +491,7 @@ const GameScreen = ({
                     navigation.navigate('Winner', {winnerName});
                 }, 3000);
 
-                return; // Don't send READY when game ends
+                return;
             } else {
                 // Generate new explosion number
                 const newExplosion = Math.floor(Math.random() * 5) + 3;
@@ -533,26 +499,21 @@ const GameScreen = ({
                 setChallengesCompleted(0);
                 console.log(`[GameScreen] New bomb will explode after ${newExplosion} challenges`);
 
-                // Continue game - clear ready players for new round
                 readyPlayers.current.clear();
             }
         }
 
-        // Don't send READY if game has ended
         if (gameEnded.current) {
             return;
         }
 
-        // Check if THIS player is the one who was eliminated
         const isEliminated = username === eliminatedPlayerName;
 
         if (isEliminated) {
-            // Eliminated players don't send READY - they just spectate
             setStatusText('You are eliminated - Spectating...');
             return;
         }
 
-        // Only non-eliminated players send READY after explosion animation completes
         setStatusText('Get ready for next round...');
         sendGameAction('READY', {name: username});
 
@@ -582,39 +543,34 @@ const GameScreen = ({
         const challenge = CHALLENGES[challengeId];
 
         if (challenge) {
-            setCountdownNumber(null); // Clear countdown
+            setCountdownNumber(null);
             setCurrentChallenge(challenge);
 
-            // Check if current player is eliminated
             const isEliminated = eliminatedPlayers.includes(username);
 
             if (isEliminated) {
-                setIsFinished(true); // Spectator mode - can't interact
+                setIsFinished(true);
                 isFinishedRef.current = true;
                 setStatusText('You are eliminated - Spectating...');
             } else {
                 setIsFinished(false);
-                isFinishedRef.current = false; // Reset ref
+                isFinishedRef.current = false;
                 setStatusText(challenge.instruction);
-                setChallengeStartTime(Date.now()); // Record start time
-                startChallengeTimer(); // Start 15-second client timer
+                setChallengeStartTime(Date.now());
+                startChallengeTimer();
 
-                // Host starts an authoritative safety timer for the round
                 if (isHost) {
                     if (safetyTimerRef.current) {
                         clearTimeout(safetyTimerRef.current);
                     }
                     safetyTimerRef.current = setTimeout(() => {
-                        // If round already resolved (normal path), skip
                         if (roundResolvedRef.current) return;
 
-                        // Compute missing players among active (non-eliminated)
                         const activePlayers = players.filter(p => !eliminatedPlayersRef.current.has(p.name));
                         const missing = activePlayers
                             .map(p => p.name)
                             .filter(name => !finishedPlayers.current.has(name));
 
-                        // Apply max penalty to missing players
                         missing.forEach(name => {
                             if (!playerResults.current[name]) {
                                 playerResults.current[name] = {
@@ -625,7 +581,6 @@ const GameScreen = ({
                             finishedPlayers.current.add(name);
                         });
 
-                        // Determine loser with the same logic as normal finish
                         const results = Object.entries(playerResults.current);
                         if (results.length > 0) {
                             const wrongAnswers = results.filter(([_, r]) => !r.isCorrect);
@@ -648,12 +603,10 @@ const GameScreen = ({
     };
 
     const sendReadyForNextRound = () => {
-        // Don't send READY if game has ended
         if (gameEnded.current) {
             return;
         }
 
-        // Only send READY if not showing explosion (explosion will send READY when complete)
         if (showExplosion === null) {
             setBombHolder(null);
             setStatusText('Get ready for next round...');
@@ -677,7 +630,6 @@ const GameScreen = ({
             hasBomb: p.name === loser
         })));
 
-        // After 3 seconds (bomb animation time), check if ready to send READY
         setTimeout(() => {
             sendReadyForNextRound();
         }, 3000);
@@ -687,12 +639,11 @@ const GameScreen = ({
 
     const handleChallengeComplete = (isCorrect: boolean = true, customDeltaTime?: number) => {
         console.log(`[GameScreen] Challenge complete for ${username}, isCorrect: ${isCorrect}`);
-        stopChallengeTimer(); // Stop timer when challenge completes
+        stopChallengeTimer();
         setIsFinished(true);
-        isFinishedRef.current = true; // Update ref
+        isFinishedRef.current = true;
         setStatusText('Waiting for others...');
 
-        // Use customDeltaTime if provided (e.g., reaction time), otherwise calculate from start
         const deltaTime = customDeltaTime ?? (Date.now() - challengeStartTime);
 
         console.log(`[GameScreen] Sending PLAYER_FINISHED for ${username}, deltaTime: ${deltaTime}ms`);
@@ -713,7 +664,6 @@ const GameScreen = ({
             <SafeAreaView style={styles.safeArea}>
                 <Header onLeave={handleLeave} title="Game"/>
 
-                {/* Game Interaction Section */}
                 <View style={styles.challengeContainer}>
                     {countdownNumber !== null ? (
                         <CountdownView countdownNumber={countdownNumber}/>
@@ -733,7 +683,6 @@ const GameScreen = ({
 
             </SafeAreaView>
 
-            {/* Explosion Animation */}
             {showExplosion && (
                 <ExplosionAnimation
                     playerName={showExplosion}

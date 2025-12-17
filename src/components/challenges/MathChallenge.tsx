@@ -13,7 +13,6 @@ export const MathChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [shuffledAnswers, setShuffledAnswers] = useState<string[]>([]);
 
-  // Shuffle answers on mount
   useEffect(() => {
     const allAnswers = [
       mathChallenge.correctAnswer,
@@ -34,7 +33,6 @@ export const MathChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
     setSelectedAnswer(answer);
     const isCorrect = answer === mathChallenge.correctAnswer;
 
-    // Answer is locked in - complete after brief feedback regardless of correctness
     setTimeout(() => {
       onComplete(isCorrect);
     }, 300);

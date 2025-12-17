@@ -42,15 +42,15 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
       if (subscription) {
         subscription.remove();
       }
-      if (progressInterval) {
+      // @ts-ignore
+        if (progressInterval) {
         clearInterval(progressInterval);
       }
     };
   }, []);
 
-  // Track progress when at correct angle
   useEffect(() => {
-    if (isComplete) return; // Don't update progress once complete
+    if (isComplete) return;
 
     let interval: NodeJS.Timeout;
 
@@ -75,7 +75,6 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
     };
   }, [isCorrectAngle, disabled, isComplete]);
 
-  // Check if challenge is complete
   useEffect(() => {
     if (progress >= tiltChallenge.holdDuration && !disabled && !isComplete) {
       setIsComplete(true);
@@ -104,12 +103,9 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
 
   return (
     <View style={styles.container}>
-      {/* Phone icon - stationary */}
       <View style={styles.phoneContainer}>
         <View style={styles.phoneIcon}>
-          {/* Phone outline */}
           <View style={styles.phoneOutline}>
-            {/* Progress fill */}
             <View style={[
               styles.phoneFill,
               {
@@ -121,7 +117,6 @@ export const TiltChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete,
         </View>
       </View>
 
-      {/* Simple percentage display */}
       <Text style={[styles.percentageText, isComplete && styles.completeText]}>
         {isComplete ? 'Complete! ✓' : `${Math.round(progressPercentage)}%`}
       </Text>

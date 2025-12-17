@@ -5,7 +5,6 @@ import { TapChallenge, ChallengeProps } from './TapChallenge';
 import { MathChallenge } from './MathChallenge';
 import { TapSequenceChallenge } from './TapSequenceChallenge';
 import { TiltChallenge } from './TiltChallenge';
-import { CompassChallenge } from './CompassChallenge';
 import { ReactionChallenge } from './ReactionChallenge';
 
 interface ChallengeRendererProps {
@@ -29,7 +28,6 @@ export const ChallengeRenderer: React.FC<ChallengeRendererProps> = ({
     MATH: MathChallenge,
     TAP_SEQUENCE: TapSequenceChallenge,
     TILT: TiltChallenge,
-    COMPASS: CompassChallenge,
     REACTION: ReactionChallenge,
   };
 

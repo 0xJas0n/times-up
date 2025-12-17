@@ -34,7 +34,7 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
     if (disabled) return;
 
     if (isWaiting) {
-      // Pressed too early - give them a huge penalty time so they definitely lose
+      // Pressed too early, give a huge penalty time so they definitely lose
       setTooEarly(true);
       onComplete(false, 999999); // Massive penalty time
       return;
@@ -46,7 +46,7 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
       setReactionTime(reaction);
 
       setTimeout(() => {
-        onComplete(true, reaction); // Pass reaction time as customDeltaTime
+        onComplete(true, reaction);
       }, 1000);
     }
   };
@@ -62,15 +62,6 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
     if (reactionTime) return `${reactionTime}ms`;
     if (showGreen) return 'Tap!';
     return 'Wait!';
-  };
-
-  const getEmoji = () => {
-    if (tooEarly) return '❌';
-    if (!reactionTime) return '⏱️';
-    if (reactionTime < 200) return '⚡';
-    if (reactionTime < 300) return '🔥';
-    if (reactionTime < 400) return '✨';
-    return '👍';
   };
 
   return (

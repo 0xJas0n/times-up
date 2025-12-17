@@ -10,7 +10,7 @@ interface ChallengeViewProps {
   challenge: Challenge;
   isEliminated: boolean;
   isFinished: boolean;
-  onComplete: (isCorrect: boolean, customDeltaTime?: number) => void;
+  onComplete: (isCorrect?: boolean, customDeltaTime?: number) => void;
 }
 
 export const ChallengeView: React.FC<ChallengeViewProps> = ({
@@ -25,13 +25,11 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
         <SpectatorView />
       ) : (
         <>
-          {/* Header (title + instruction) at top */}
           <View style={styles.header}>
             <Text style={styles.title}>{challenge.title}</Text>
             <Text style={styles.instruction}>{challenge.instruction}</Text>
           </View>
 
-          {/* Centered challenge content */}
           <View style={styles.centerContent}>
             <ChallengeRenderer
               challenge={challenge}
@@ -40,7 +38,6 @@ export const ChallengeView: React.FC<ChallengeViewProps> = ({
             />
           </View>
 
-          {/* Timer/progress anchored at bottom */}
           <View style={styles.footer}>
             <ChallengeTimer />
           </View>

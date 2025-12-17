@@ -28,8 +28,6 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
   ).current;
 
   useEffect(() => {
-    // Disconnect immediately - we're done with the network
-    // No need to delay, we're already on the winner screen
     disconnect();
 
     // Winner text pop-in animation
@@ -85,7 +83,6 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
     <View style={styles.container}>
       <PatternBackground speed={15} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
-        {/* Confetti */}
         {confettiAnims.map((anim, i) => {
           const rotateConfetti = anim.rotate.interpolate({
             inputRange: [0, 1],
@@ -114,7 +111,6 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
         })}
 
         <View style={styles.content}>
-          {/* Trophy/Crown Animation */}
           <Animated.View
             style={[
               styles.crownContainer,
@@ -126,20 +122,17 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
             <Text style={styles.crownEmoji}>👑</Text>
           </Animated.View>
 
-          {/* Winner Text */}
           <Animated.View style={{ transform: [{ scale }] }}>
             <Text style={styles.winnerTitle}>WINNER!</Text>
             <Text style={styles.winnerName}>{winnerName}</Text>
           </Animated.View>
 
-          {/* Celebration Emojis */}
           <View style={styles.emojiRow}>
             <Text style={styles.emoji}>🎉</Text>
             <Text style={styles.emoji}>🏆</Text>
             <Text style={styles.emoji}>🎊</Text>
           </View>
 
-          {/* Buttons */}
           <View style={styles.buttonContainer}>
             <Pressable
               onPress={handleHome}
