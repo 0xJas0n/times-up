@@ -97,7 +97,7 @@ export const useGameConnection = () => {
             NetworkManager.broadcast(PROTOCOL.GAME_START, '');
         }
 
-        if (state === 'START_ROUND') {
+        if (state === 'START_ROUND' || state === 'ROUND_START') {
             NetworkManager.broadcast(PROTOCOL.ROUND_START, data.id.toString());
         }
 
@@ -128,6 +128,10 @@ export const useGameConnection = () => {
         NetworkManager.broadcast(PROTOCOL.PLAYER_LIST, JSON.stringify(players));
     };
 
+    const sendPlayerDisconnect = (playerName: string) => {
+        NetworkManager.broadcast(PROTOCOL.PLAYER_DISCONNECT, playerName);
+    };
+
     const disconnect = async () => {
         await NetworkManager.stop();
         NetworkManager.clearCurrentMessage();
@@ -146,6 +150,7 @@ export const useGameConnection = () => {
         sendGameAction,
         broadcastGameState,
         broadcastPlayerList,
+        sendPlayerDisconnect,
         disconnect,
         clearLastMessage
     };

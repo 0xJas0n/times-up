@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, Pressable, View } from 'react-native';
+import { colors as themeColors } from '../../theme/colors';
 import { Challenge, TapSequenceChallenge as TapSequenceChallengeType } from '../../data/challenges';
 
 export interface ChallengeProps {
@@ -16,6 +17,7 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
   const [highlightedButton, setHighlightedButton] = useState<number | null>(null);
   const [isWrong, setIsWrong] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [startedShowing, setStartedShowing] = useState(false);
 
   // Generate random sequence on mount
   useEffect(() => {
@@ -26,30 +28,41 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
     setSequence(newSequence);
   }, [sequenceChallenge.sequenceLength]);
 
-  // Show sequence animation
   useEffect(() => {
     if (sequence.length === 0) return;
 
     let timeoutIds: NodeJS.Timeout[] = [];
 
     const showSequence = async () => {
+      const initialDelay = 700;
+      const stepDuration = 800;
+      const highlightDuration = 400;
+
+      setStartedShowing(false);
       setShowingSequence(true);
+
+      // mark when the pattern actually starts
+      const startMark = setTimeout(() => {
+        setStartedShowing(true);
+      }, initialDelay);
+      timeoutIds.push(startMark);
 
       for (let i = 0; i < sequence.length; i++) {
         const timeoutId = setTimeout(() => {
           setHighlightedButton(sequence[i]);
-        }, i * 800);
+        }, initialDelay + i * stepDuration);
         timeoutIds.push(timeoutId);
 
         const clearTimeoutId = setTimeout(() => {
           setHighlightedButton(null);
-        }, i * 800 + 400);
+        }, initialDelay + i * stepDuration + highlightDuration);
         timeoutIds.push(clearTimeoutId);
       }
 
       const finalTimeout = setTimeout(() => {
         setShowingSequence(false);
-      }, sequence.length * 800 + 500);
+        setStartedShowing(false);
+      }, initialDelay + sequence.length * stepDuration + 500);
       timeoutIds.push(finalTimeout);
     };
 
@@ -69,14 +82,12 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
     // Check if the tap is correct
     if (sequence[newUserSequence.length - 1] !== index) {
       setIsWrong(true);
-      // Wrong answer - complete with false
       setTimeout(() => {
         onComplete(false);
       }, 300);
       return;
     }
 
-    // Check if sequence is complete
     if (newUserSequence.length === sequence.length) {
       setIsCorrect(true);
       setTimeout(() => {
@@ -86,30 +97,40 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
   };
 
   const getButtonStyle = (index: number) => {
+    const isClickable = !showingSequence && !disabled && !isWrong;
     if (highlightedButton === index) {
       return [styles.button, styles.highlightedButton];
     }
     if (isWrong && userSequence[userSequence.length - 1] === index) {
       return [styles.button, styles.wrongButton];
     }
-    return styles.button;
+    if (!isClickable) {
+      return [styles.button, styles.inactiveButton];
+    }
+    return [styles.button, styles.activeButton];
   };
 
-  const getButtonColor = (index: number) => {
-    const colors = ['#FF6B6B', '#4ECDC4', '#FFD93D', '#6BCF7F'];
-    return colors[index];
-  };
+  const baseButtonStyles = [styles.btn0, styles.btn1, styles.btn2, styles.btn3];
+  const pressedButtonStyles = [
+    styles.btn0Pressed,
+    styles.btn1Pressed,
+    styles.btn2Pressed,
+    styles.btn3Pressed,
+  ];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{sequenceChallenge.title}</Text>
-      <Text style={styles.instruction}>
-        {showingSequence ? 'Watch the pattern...' : sequenceChallenge.instruction}
-      </Text>
-
       <View style={styles.progressContainer}>
         <Text style={styles.progress}>
-          {isWrong ? 'Wrong!' : isCorrect ? 'Correct!' : `${userSequence.length} / ${sequence.length}`}
+          {isWrong
+            ? 'Wrong!'
+            : isCorrect
+            ? 'Correct!'
+            : showingSequence
+            ? startedShowing
+              ? 'Watch the pattern...'
+              : 'Get ready...'
+            : `Your turn: ${userSequence.length} / ${sequence.length}`}
         </Text>
       </View>
 
@@ -117,9 +138,10 @@ export const TapSequenceChallenge: React.FC<ChallengeProps> = ({ challenge, onCo
         {[0, 1, 2, 3].map((index) => (
           <Pressable
             key={index}
-            style={[
+            style={({ pressed }) => [
               getButtonStyle(index),
-              { backgroundColor: getButtonColor(index) }
+              baseButtonStyles[index],
+              pressed && pressedButtonStyles[index],
             ]}
             onPress={() => handleButtonPress(index)}
             disabled={showingSequence || disabled || isWrong}
@@ -138,18 +160,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     width: '100%',
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 5,
   },
   progressContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -183,13 +193,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
+  btn0: { backgroundColor: themeColors.error },
+  btn0Pressed: { backgroundColor: themeColors.errorDark },
+  btn1: { backgroundColor: themeColors.teal },
+  btn1Pressed: { backgroundColor: themeColors.tealDark },
+  btn2: { backgroundColor: themeColors.yellow },
+  btn2Pressed: { backgroundColor: themeColors.yellowDark },
+  btn3: { backgroundColor: themeColors.greenLight },
+  btn3Pressed: { backgroundColor: themeColors.greenLightDark },
   highlightedButton: {
     transform: [{ scale: 1.1 }],
     elevation: 10,
     shadowOpacity: 0.6,
   },
+  inactiveButton: {
+    opacity: 0.6,
+    transform: [{ scale: 0.98 }],
+  },
   wrongButton: {
     opacity: 0.5,
+  },
+  activeButton: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
   },
   buttonText: {
     fontSize: 32,

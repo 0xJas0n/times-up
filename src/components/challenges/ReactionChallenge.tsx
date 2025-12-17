@@ -34,7 +34,7 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
     if (disabled) return;
 
     if (isWaiting) {
-      // Pressed too early - give them a huge penalty time so they definitely lose
+      // Pressed too early, give a huge penalty time so they definitely lose
       setTooEarly(true);
       onComplete(false, 999999); // Massive penalty time
       return;
@@ -46,7 +46,7 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
       setReactionTime(reaction);
 
       setTimeout(() => {
-        onComplete(true, reaction); // Pass reaction time as customDeltaTime
+        onComplete(true, reaction);
       }, 1000);
     }
   };
@@ -64,20 +64,8 @@ export const ReactionChallenge: React.FC<ChallengeProps> = ({ challenge, onCompl
     return 'Wait!';
   };
 
-  const getEmoji = () => {
-    if (tooEarly) return '❌';
-    if (!reactionTime) return '⏱️';
-    if (reactionTime < 200) return '⚡';
-    if (reactionTime < 300) return '🔥';
-    if (reactionTime < 400) return '✨';
-    return '👍';
-  };
-
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{reactionChallenge.title}</Text>
-      <Text style={styles.instruction}>{reactionChallenge.instruction}</Text>
-
       <Pressable
         style={[
           styles.reactionButton,
@@ -98,18 +86,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     width: '100%',
-  },
-  challengeTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 16,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 5,
   },
   reactionButton: {
     width: 200,

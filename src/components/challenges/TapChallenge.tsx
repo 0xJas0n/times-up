@@ -19,15 +19,12 @@ export const TapChallenge: React.FC<ChallengeProps> = ({ challenge, onComplete, 
     setCounter(newVal);
 
     if (newVal >= tapChallenge.target) {
-      onComplete(true); // Tap challenge is always "correct"
+      onComplete(true);
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.challengeTitle}>{tapChallenge.title}</Text>
-      <Text style={styles.instruction}>{tapChallenge.instruction}</Text>
-
       <Pressable
         style={[styles.tapBtn, disabled && styles.disabledBtn]}
         onPress={handleTap}
@@ -50,18 +47,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 20,
-  },
-  challengeTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#2DD881',
-    textAlign: 'center',
-  },
-  instruction: {
-    fontSize: 18,
-    color: 'white',
-    textAlign: 'center',
-    marginBottom: 10,
   },
   tapBtn: {
     width: 200,

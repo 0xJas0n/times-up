@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { PatternBackground } from '../components/PatternBackground';
 import { useGameConnection } from '../hooks/useGameConnection';
+import { colors } from '../theme/colors';
 
 type RootStackParamList = {
   Home: undefined;
@@ -27,8 +28,6 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
   ).current;
 
   useEffect(() => {
-    // Disconnect immediately - we're done with the network
-    // No need to delay, we're already on the winner screen
     disconnect();
 
     // Winner text pop-in animation
@@ -84,7 +83,6 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
     <View style={styles.container}>
       <PatternBackground speed={15} tileSize={42} gap={42} />
       <SafeAreaView style={styles.safeArea}>
-        {/* Confetti */}
         {confettiAnims.map((anim, i) => {
           const rotateConfetti = anim.rotate.interpolate({
             inputRange: [0, 1],
@@ -113,7 +111,6 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
         })}
 
         <View style={styles.content}>
-          {/* Trophy/Crown Animation */}
           <Animated.View
             style={[
               styles.crownContainer,
@@ -125,22 +122,25 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
             <Text style={styles.crownEmoji}>👑</Text>
           </Animated.View>
 
-          {/* Winner Text */}
           <Animated.View style={{ transform: [{ scale }] }}>
             <Text style={styles.winnerTitle}>WINNER!</Text>
             <Text style={styles.winnerName}>{winnerName}</Text>
           </Animated.View>
 
-          {/* Celebration Emojis */}
           <View style={styles.emojiRow}>
             <Text style={styles.emoji}>🎉</Text>
             <Text style={styles.emoji}>🏆</Text>
             <Text style={styles.emoji}>🎊</Text>
           </View>
 
-          {/* Buttons */}
           <View style={styles.buttonContainer}>
-            <Pressable style={styles.homeButton} onPress={handleHome}>
+            <Pressable
+              onPress={handleHome}
+              style={({ pressed }) => [
+                styles.homeButton,
+                pressed && styles.homeButtonPressed,
+              ]}
+            >
               <Text style={styles.homeButtonText}>Home</Text>
             </Pressable>
           </View>
@@ -153,7 +153,7 @@ const WinnerScreen = ({ route, navigation }: WinnerScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   winnerName: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -207,18 +207,24 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   homeButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  homeButtonPressed: {
+    backgroundColor: colors.primaryDark,
   },
   homeButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text,
   },
 });
 

@@ -1,6 +1,6 @@
 export interface BaseChallenge {
     id: number;
-    type: 'TAP' | 'MATH' | 'TAP_SEQUENCE' | 'TILT' | 'COMPASS' | 'REACTION';
+    type: 'TAP' | 'MATH' | 'TAP_SEQUENCE' | 'TILT' | 'REACTION';
     title: string;
     instruction: string;
 }
@@ -14,7 +14,7 @@ export interface MathChallenge extends BaseChallenge {
     type: 'MATH';
     question: string;
     correctAnswer: string;
-    wrongAnswers: [string, string, string]; // Exactly 3 wrong answers
+    wrongAnswers: [string, string, string];
 }
 
 export interface TapSequenceChallenge extends BaseChallenge {
@@ -29,19 +29,13 @@ export interface TiltChallenge extends BaseChallenge {
     holdDuration: number; // milliseconds to hold the angle
 }
 
-export interface CompassChallenge extends BaseChallenge {
-    type: 'COMPASS';
-    targetDirection: 'north' | 'south' | 'east' | 'west';
-    tolerance: number; // degrees of tolerance
-}
-
 export interface ReactionChallenge extends BaseChallenge {
     type: 'REACTION';
-    waitTimeMin: number; // minimum wait time in ms
-    waitTimeMax: number; // maximum wait time in ms
+    waitTimeMin: number;
+    waitTimeMax: number;
 }
 
-export type Challenge = TapChallenge | MathChallenge | TapSequenceChallenge | TiltChallenge | CompassChallenge | ReactionChallenge;
+export type Challenge = TapChallenge | MathChallenge | TapSequenceChallenge | TiltChallenge | ReactionChallenge;
 
 export const CHALLENGES: Record<number, Challenge> = {
     1: {
@@ -174,54 +168,22 @@ export const CHALLENGES: Record<number, Challenge> = {
     },
     17: {
         id: 17,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the north!',
-        targetDirection: 'north',
-        tolerance: 20,
-    },
-    18: {
-        id: 18,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the south!',
-        targetDirection: 'south',
-        tolerance: 20,
-    },
-    19: {
-        id: 19,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the east!',
-        targetDirection: 'east',
-        tolerance: 20,
-    },
-    20: {
-        id: 20,
-        type: 'COMPASS',
-        title: 'Compass Challenge',
-        instruction: 'Point your phone to the west!',
-        targetDirection: 'west',
-        tolerance: 20,
-    },
-    21: {
-        id: 21,
         type: 'REACTION',
         title: 'Reaction Challenge',
         instruction: 'Tap when the color changes!',
         waitTimeMin: 2000,
         waitTimeMax: 5000,
     },
-    22: {
-        id: 22,
+    18: {
+        id: 18,
         type: 'REACTION',
         title: 'Reaction Challenge',
         instruction: 'React as fast as you can!',
         waitTimeMin: 1500,
         waitTimeMax: 4000,
     },
-    23: {
-        id: 23,
+    19: {
+        id: 19,
         type: 'REACTION',
         title: 'Reaction Challenge',
         instruction: 'Wait for it... then tap!',

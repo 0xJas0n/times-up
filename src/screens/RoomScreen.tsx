@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, Text, View, Pressable, ScrollView, Alert, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PatternBackground } from '../components/PatternBackground';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -7,6 +7,7 @@ import { useGameConnection } from '../hooks/useGameConnection';
 import { RootStackParamList } from '../navigation/types';
 import {colors} from '../theme/colors';
 import Header from '../components/Header';
+import { useFocusEffect } from '@react-navigation/native';
 
 type RoomScreenProps = NativeStackScreenProps<RootStackParamList, 'Room'>;
 
@@ -19,16 +20,15 @@ export interface Player {
 export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     const { roomCode, username, isHost, service } = route.params;
     const [players, setPlayers] = useState<Player[]>([]);
+    const isExitingRef = useRef<boolean>(false);
 
-    const { startHostingGame, joinGame, broadcastGameState, broadcastPlayerList, lastMessage, disconnect, clearLastMessage } =
+    const { startHostingGame, joinGame, broadcastGameState, broadcastPlayerList, sendPlayerDisconnect, lastMessage, disconnect, clearLastMessage } =
         useGameConnection();
 
-    // Initialization
     useEffect(() => {
         clearLastMessage();
 
         if (isHost) {
-            // Host adds themselves and starts server
             const initialPlayers = [{
                 id: username,
                 name: username,
@@ -37,41 +37,68 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
             setPlayers(initialPlayers);
             startHostingGame(roomCode, username);
         } else if (service) {
-            // Client connects and sends join request
             joinGame(service, username);
         }
 
         return () => {
-            // Note: We don't cleanup connection on unmount because it
+            // We don't cleanup connection on unmount because it
             // should persist when navigating to GameScreen
         };
     }, []);
 
-    // Listen for updates
+    // Intercept system/back navigation to ensure proper disconnect & broadcast
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (isExitingRef.current) {
+                // Allow default behavior if we've already initiated exit
+                return;
+            }
+            // Prevent leaving and run our cancellation logic
+            e.preventDefault();
+            // Trigger the same flow as pressing the UI leave/back button
+            handleCancel();
+            // Mark as exiting so the next navigation attempt proceeds
+            isExitingRef.current = true;
+        });
+        return unsubscribe;
+    }, [navigation]);
+
+    // Android hardware back button fallback (extra safety)
+    useFocusEffect(
+        React.useCallback(() => {
+            const onBackPress = () => {
+                if (isExitingRef.current) {
+                    // Let the default back behavior proceed
+                    return false;
+                }
+                handleCancel();
+                isExitingRef.current = true;
+                return true; // We handled it
+            };
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+            return () => subscription.remove();
+        }, [])
+    );
+
     useEffect(() => {
         if (!lastMessage) return;
 
-        // Only process room-specific messages in RoomScreen
         const roomMessages = ['PLAYER_JOIN', 'PLAYER_LIST', 'PLAYER_DISCONNECT', 'GAME_START', 'HOST_CANCEL'];
         if (!roomMessages.includes(lastMessage.type)) {
             return;
         }
 
-        // HOST: Receive player join requests
         if (isHost && lastMessage.type === 'PLAYER_JOIN') {
             const playerName = lastMessage.name;
 
             setPlayers(prev => {
-                // Check if player already exists
                 if (prev.some(p => p.name === playerName)) {
-                    // Player reconnected - still broadcast list to sync them
                     setTimeout(() => {
                         broadcastPlayerList(prev);
                     }, 0);
                     return prev;
                 }
 
-                // Add new player
                 const newPlayers = [
                     ...prev,
                     {
@@ -81,7 +108,6 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
                     },
                 ];
 
-                // Broadcast updated player list to all clients
                 setTimeout(() => {
                     broadcastPlayerList(newPlayers);
                 }, 0);
@@ -90,14 +116,12 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
             });
         }
 
-        // HOST: Handle player disconnect
         if (isHost && lastMessage.type === 'PLAYER_DISCONNECT') {
             const playerName = lastMessage.name;
 
             setPlayers(prev => {
                 const newPlayers = prev.filter(p => p.name !== playerName);
 
-                // Broadcast updated player list to remaining clients
                 setTimeout(() => {
                     broadcastPlayerList(newPlayers);
                 }, 0);
@@ -106,17 +130,14 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
             });
         }
 
-        // CLIENT: Receive player list from host
         if (!isHost && lastMessage.type === 'PLAYER_LIST') {
             setPlayers(lastMessage.players);
         }
 
-        // Both host and client: Game starts
         if (lastMessage.type === 'GAME_START') {
             navigateToGame();
         }
 
-        // Client: Host cancelled
         if (!isHost && lastMessage.type === 'HOST_CANCEL') {
             (async () => {
                 await disconnect();
@@ -137,7 +158,6 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     const handleStart = async () => {
         if (!isHost) return;
 
-        // Require at least 2 players to start
         if (players.length < 2) {
             Alert.alert('Not Enough Players', 'You need at least 2 players to start the game.');
             return;
@@ -145,7 +165,6 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
 
         broadcastGameState('GAME_START');
 
-        // Small delay to ensure message is sent before navigation
         await new Promise(resolve => setTimeout(resolve, 100));
 
         navigateToGame();
@@ -154,6 +173,9 @@ export default function RoomScreen({ navigation, route }: RoomScreenProps) {
     const handleCancel = async () => {
         if (isHost) {
             broadcastGameState('HOST_CANCEL');
+            await new Promise(resolve => setTimeout(resolve, 100));
+        } else {
+            sendPlayerDisconnect(username);
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         await disconnect();
